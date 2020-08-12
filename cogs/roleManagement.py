@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 
-class serverStatistics(commands.Cog):
+class roleManagement(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -11,10 +11,10 @@ class serverStatistics(commands.Cog):
     #                      Events                        #
     ######################################################
 
-    # Event Showing serverStatistics is loaded
+    # Event Showing roleManagement is loaded
     @commands.Cog.listener()
     async def on_ready(self):
-        print('\t- Loaded serverStatistics')
+        print('\t- Loaded roleManagement')
 
     ######################################################
     #                     Commands                       #
@@ -22,4 +22,4 @@ class serverStatistics(commands.Cog):
 
 
 def setup(client):
-    client.add_cog(serverStatistics(client))
+    client.add_cog(roleManagement(client))
