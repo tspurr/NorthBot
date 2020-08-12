@@ -10,7 +10,7 @@ class messageManagment(commands.Cog):
     # Event Showing messageManagment is loaded
     @commands.Cog.listener()
     async def on_ready(self):
-        print('loaded messageManagment')
+        print('\t- Loaded messageManagment')
 
     # Saying Hello to anyone who wants to say hi
     @commands.command()
