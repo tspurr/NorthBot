@@ -32,5 +32,11 @@ for filename in os.listdir('./cogs'):
     if filename.endswith('.py'):
         client.load_extension('cogs.' + (filename[:-3]))
 
+# Terminates the bot so that the python program stops running when code needs to be updated
+@client.event
+async def on_message(message):
+    if str(message.author) == 'UpNorth#9567' and message.content() == 'killBot':
+        await client.logout()
+
 # Token to Identify which bot is being called, and running the code
 client.run(TOKEN)

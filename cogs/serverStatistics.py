@@ -1,6 +1,13 @@
 import discord
 from discord.ext import commands
 
+class channelMessages:
+    def __int__(self, name, numMessages):
+        self.name = name
+        self.numMessages = numMessages
+
+        def addMessage(self):
+            self.numMessages = self.numMessages + 1
 
 class serverStatistics(commands.Cog):
 
@@ -15,6 +22,7 @@ class serverStatistics(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print('\t- Loaded serverStatistics')
+    
 
     ######################################################
     #                     Commands                       #
