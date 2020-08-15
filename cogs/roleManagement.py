@@ -1,5 +1,15 @@
 import discord
 from discord.ext import commands
+import pymongo
+from pymongo import MongoClient
+
+# Getting the NorthBot mongoDB connection URL
+file = open("mongoURL.txt")
+connectionURL = file.read()
+file.close()
+
+# MongoDB initialization
+cluster = MongoClient(connectionURL)
 
 
 class roleManagement(commands.Cog):
@@ -19,6 +29,37 @@ class roleManagement(commands.Cog):
     ######################################################
     #                     Commands                       #
     ######################################################
+
+    #  Create a Role Group
+    @commands.command(name='Create Role Group',
+                      description='Creates a Group of roles format: .createRG [name] roleID1 roleID2 ...')
+    async def createRG(self, ctx, *args):
+        dataBase = cluster[str(ctx.guild.id)]
+        collection = dataBase["roleGroups"]
+
+        myquery = {"_id": args[0]}
+
+        if collection.count_documents(myquery) == 0:  # Checks if the server has a group with that name already
+            post = {"_id": args[0], 'roleIDs': args[1:]}
+            collection.insert_one(post)
+            await ctx.channel.send(f'Role Group {args[0]} created!')
+        else:
+            await ctx.channel.send(f'Already a Role Group created called {args[0]}!'
+                                   f'\nTry running .deleteRG {args[0]}')
+
+    # Deletes a Role Group
+    @commands.command(name='Delete Role Group', description='Deletes a group of roles format: .deleteRG [name]')
+    async def deleteRG(self, ctx, *args):
+        dataBase = cluster[str(ctx.guild.id)]
+        collection = dataBase["roleGroup"]
+
+        myquery = {"_id": args[0]}
+
+        if collection.count_documents(myquery) == 1:
+            collection.delete_one(myquery)
+            await ctx.channel.send(f'Role Group {args[0]} deleted!')
+        else:
+            await ctx.channel.send(f'No Role Group named {args[0]}!')
 
 
 def setup(client):

@@ -12,6 +12,14 @@ file.close()
 cluster = MongoClient(connectionURL)
 
 
+# Checking if the user's reaction is in the roleMenu
+async def menuReaction(userReactionEmoji, menu):
+    for emoji in menu:
+        if userReactionEmoji == emoji:
+            return True
+    return False
+
+
 class roleMenu(commands.Cog):
 
     def __init__(self, client):
@@ -56,7 +64,7 @@ class roleMenu(commands.Cog):
     async def roleMenu(self, ctx, messageID, roleGroup):
         dataBase = cluster[str(ctx.guild.id)]
         menus = dataBase["roleMenus"]
-        group = dataBase[str(roleGroup)]  # TODO create role groups in roleMenu.py
+        group = dataBase["roleGroups"]
         global emojiRole
 
         myquery = {"_id": messageID}
@@ -68,7 +76,7 @@ class roleMenu(commands.Cog):
                 ctx.add_reaction()
                 emojiRole[str(userReaction)] = role
 
-            post = {"_id": messageID, "cName": ctx.channel.name, "emojiRole": emojiRole}
+            post = {"_id": messageID, "cName": ctx.channel.name, "content": ctx.message, "emojiRole": emojiRole}
             menus.insert_one(post)
         else:
             await ctx.channel.send(f'There is already a role menu on that message! ID: {messageID}')
