@@ -32,9 +32,16 @@ class messageManagment(commands.Cog):
         await ctx.send('Hello')
 
     # Deleting a specific NUMBER of messages anywhere
-    @commands.command()
+    @commands.command(name='delete', description='Delete 1-100 messages in a channel')
     async def delete(self, ctx, arg):
-        await ctx.channel.purge(limit=int(arg))
+        if ctx.message.author.server_permissions.administrator:  # Have to be an administrator to run
+            if int(arg) > 100:
+                await ctx.channel.purge(limit=100)
+                await ctx.channel.send('Limit 100 deletions!')
+            else:
+                await ctx.channel.purge(limit=int(arg))
+        else:
+            await ctx.channel.send (f'Sorry {ctx.message.author} you do not have permissions!')
 
 
 def setup(client):
