@@ -11,6 +11,7 @@ file.close()
 # MongoDB initialization
 cluster = MongoClient(connectionURL)
 
+
 class roleMenu(commands.Cog):
 
     def __init__(self, client):
@@ -47,29 +48,30 @@ class roleMenu(commands.Cog):
         # else
             # return
 
-
     ######################################################
     #                     Commands                       #
     ######################################################
 
     @commands.command(name='Role Menu', description='Menu to allow users to select a role in the server from one menu')
-    async def roleMenu(self, ctx):
+    async def roleMenu(self, ctx, messageID, roleGroup):
         dataBase = cluster[str(ctx.guild.id)]
         menus = dataBase["roleMenus"]
+        group = dataBase[str(roleGroup)]  # TODO create role groups in roleMenu.py
+        global emojiRole
 
-        myquery = {"_id": ctx.message.id}
+        myquery = {"_id": messageID}
         if menus.count_documents(myquery) == 0:
-            post = {"_id": ctx.message.id, "cName": ctx.channel.name}
+            for role in group:
+                await ctx.channel.send(f'Add reaction to this message for: ```css{role}```')
+                ctx.on_reaction()
+                lastMessage = ctx.channel.history().id
+                ctx.add_reaction()
+                emojiRole[str(userReaction)] = role
+
+            post = {"_id": messageID, "cName": ctx.channel.name, "emojiRole": emojiRole}
             menus.insert_one(post)
-            await ctx.channel.send('added RM')
         else:
-            query = {"_id": ctx.channel.id}
-            user = channelCollection.find(query)
-            for result in user:
-                numMessages = result["numMessages"]
-            numMessages += 1
-            channelCollection.update_one({"_id": ctx.channel.id}, {"$set": {"numMessages": numMessages}})
-            await ctx.channel.send('plus one')
+            await ctx.channel.send(f'There is already a role menu on that message! ID: {messageID}')
 
 
 def setup(client):

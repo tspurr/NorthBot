@@ -34,6 +34,7 @@ for filename in os.listdir('./cogs'):
     if filename.endswith('.py'):
         client.load_extension(f'cogs.{filename[:-3]}')
 
+
 # Terminates the bot so that the python program stops running when code needs to be updated
 @client.command()
 @commands.is_owner()
