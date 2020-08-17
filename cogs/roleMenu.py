@@ -37,24 +37,36 @@ class roleMenu(commands.Cog):
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         print(f'{user.name} reacted with {reaction.emoji}')
-        # if reaction message ID is role menu (in specific server)
-            # if reaction is in role menu
-                # give user role associated
-            # else
-                # return
-        # else
-            # return
+        dataBase = cluster[str(ctx.guild.id)]
+        menus = dataBase["roleMenus"]
+
+        myquery = {"_id": reaction.message.id}
+        if menus.count_documents(myquery) == 1:  # If reaction menu exist
+            emojiRole = menus.find({myquery}, {"_id": 0, "cName": 0, "content": 0,
+                                               "emojiRole": 1})  # Only returns the emojiRole dictionary
+            if emojiRole.has_key(reaction.emoji):  # Check to see if the key exists
+                user.add_role(emojiRole[reaction.emoji])  # Adds the role associated with the reaction on the menu
+            else:
+                return
+        else:
+            return
 
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction, user):
         print(f'{user.name} removed reaction with {reaction.emoji}')
-        # if reaction message ID is role menu (in specific server)
-            # if reaction is in role menu
-                # give user role associated
-            # else
-                # return
-        # else
-            # return
+        dataBase = cluster[str(ctx.guild.id)]
+        menus = dataBase["roleMenus"]
+
+        myquery = {"_id": reaction.message.id}
+        if menus.count_documents(myquery) == 1:  # If reaction menu exist
+            emojiRole = menus.find({myquery}, {"_id": 0, "cName": 0, "content": 0,
+                                               "emojiRole": 1})  # Only returns the emojiRole dictionary
+            if emojiRole.has_key(reaction.emoji):  # Check to see if the key exists
+                user.remove_role(emojiRole[reaction.emoji])  # Removes the role associated with the reaction on the menu
+            else:
+                return
+        else:
+            return
 
     ######################################################
     #                     Commands                       #
@@ -64,17 +76,18 @@ class roleMenu(commands.Cog):
     async def roleMenu(self, ctx, messageID, roleGroup):
         dataBase = cluster[str(ctx.guild.id)]
         menus = dataBase["roleMenus"]
-        group = dataBase["roleGroups"]
+        group = dataBase["roleGroups"].find(str(roleGroup))
         global emojiRole
 
         myquery = {"_id": messageID}
         if menus.count_documents(myquery) == 0:
-            for role in group:
-                await ctx.channel.send(f'Add reaction to this message for: ```css{role}```')
-                ctx.on_reaction()
-                lastMessage = ctx.channel.history().id
-                ctx.add_reaction()
-                emojiRole[str(userReaction)] = role
+
+            await ctx.channel.send(f'Add reaction to this message for: ```css{roleGroup[0]}```')
+            reactionMsg = ctx.channel.message(limit=1).history
+            reaction = await ctx.wait_for_reaction(emoji)
+
+            for role in group[1:]:
+                reactionMsg.edit(f'Add reaction to this message for: ```css{role}```')
 
             post = {"_id": messageID, "cName": ctx.channel.name, "content": ctx.message, "emojiRole": emojiRole}
             menus.insert_one(post)
