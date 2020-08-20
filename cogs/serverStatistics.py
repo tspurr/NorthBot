@@ -41,7 +41,6 @@ class serverStatistics(commands.Cog):
         if channelCollection.count_documents(myquery) == 0:
             post = {"_id": ctx.channel.id, "cName": ctx.channel.name, "numMessages": 1}
             channelCollection.insert_one(post)
-            await ctx.channel.send('added new')
         else:
             query = {"_id": ctx.channel.id}
             user = channelCollection.find(query)
@@ -49,8 +48,6 @@ class serverStatistics(commands.Cog):
                 numMessages = result["numMessages"]
             numMessages += 1
             channelCollection.update_one({"_id": ctx.channel.id}, {"$set": {"numMessages": numMessages}})
-            await ctx.channel.send('plus one')
-
 
     ######################################################
     #                     Commands                       #

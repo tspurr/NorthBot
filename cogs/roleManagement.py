@@ -32,15 +32,17 @@ class roleManagement(commands.Cog):
 
     #  Create a Role Group
     @commands.command(name='Create Role Group',
-                      description='Creates a Group of roles format: .createRG [name] roleID1 roleID2 ...')
+                      description='Creates a Group of roles format: .createRG [name] role1 role2 ...\n'
+                                  '(You cannot have two roles with the same name!)')
     async def createRG(self, ctx, *args):
-        dataBase = cluster[str(ctx.guild.id)]
+        guildID = ctx.guild.id
+        dataBase = cluster[str(guildID)]
         collection = dataBase["roleGroups"]
 
         myquery = {"_id": args[0]}
 
         if collection.count_documents(myquery) == 0:  # Checks if the server has a group with that name already
-            post = {"_id": args[0], 'roleIDs': args[1:]}
+            post = {"_id": args[0], 'roleNames': args[1:]}
             collection.insert_one(post)
             await ctx.channel.send(f'Role Group {args[0]} created!')
         else:
@@ -50,7 +52,8 @@ class roleManagement(commands.Cog):
     # Deletes a Role Group
     @commands.command(name='Delete Role Group', description='Deletes a group of roles format: .deleteRG [name]')
     async def deleteRG(self, ctx, *args):
-        dataBase = cluster[str(ctx.guild.id)]
+        guildID = ctx.guild.id
+        dataBase = cluster[str(guildID)]
         collection = dataBase["roleGroup"]
 
         myquery = {"_id": args[0]}

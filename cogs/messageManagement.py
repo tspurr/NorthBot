@@ -12,18 +12,17 @@ file.close()
 cluster = MongoClient(connectionURL)
 
 
-async def badWord(message):
-    global badWords
+def badWord(message):
+    badWords = None
 
     with open('badWords.txt') as inFile:
         badWords = inFile.readlines()
+    inFile.close()
 
-    if any(word in badWords for word in message):
-        return True
-    else:
-        return False
+    return any(word[:-1] in message for word in badWords)
 
-class messageManagment(commands.Cog):
+
+class messageManagement(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -35,38 +34,41 @@ class messageManagment(commands.Cog):
     # Showing messageManagment is loaded
     @commands.Cog.listener()
     async def on_ready(self):
-        print('\t- Loaded messageManagment')
+        print('\t- Loaded messageManagement')
 
-        serverID = self.client.guild.id
-        serverName = self.client.guild.name
+        servers = self.client.guilds
+        serverNames = discord.Guild.name
 
-        dataBase = cluster[str(serverID)]
-        collection = dataBase["serverInfo"]
+        for server in servers:
+            dataBase = cluster[str(server.id)]
+            collection = dataBase["serverInfo"]
 
-        query = {"_id": serverID}
-        if collection.count_documents(query) == 0:
-            post = {"_id": serverID, "serverName": serverName, "messageRestrictions": False}
-        else:
-            return
+            query = {"_id": server.id}
+            if collection.count_documents(query) == 0:
+                post = {"_id": server.id, "serverName": server.name, "messageRestrictions": False}
+                collection.insert_one(post)
 
     # Deleting all TEXT messages in a specific channel
     @commands.Cog.listener()
-    async def on_message(self, ctx, message):
-        if str(message.channel) == "pics" and message.content != "":
-            await message.channel.purge(limit=1)
+    async def on_message(self, ctx):
+        if ctx.author.bot:
+            return
+
+        if str(ctx.channel) == "pics" and ctx.content != "":
+            await ctx.channel.purge(limit=1)
+
         serverID = ctx.guild.id
-        messageContent = ctx.message.split(" ")
+        messageContent = ctx.content.split(" ")
 
         dataBase = cluster[str(serverID)]
         collection = dataBase["serverInfo"]
 
-        if collection.find({"_id": serverID}, {"_id": 0, "serverName": 0, "messageRestrictions": 1}):
+        query = collection.find_one({"_id": serverID}, {"_id": 0, "messageRestrictions": 1})
+        print(query['messageRestrictions'])
+        if query['messageRestrictions']:
             if badWord(messageContent):
+                await ctx.channel.purge(limit=1)
                 await ctx.channel.send("^^ BAD WORD! WATCH YOUR LANGUAGE!")
-            else:
-                return
-        else:
-            return
 
     ######################################################
     #                     Commands                       #
@@ -108,5 +110,5 @@ class messageManagment(commands.Cog):
 
 
 def setup(client):
-    client.add_cog(messageManagment(client))
+    client.add_cog(messageManagement(client))
 
