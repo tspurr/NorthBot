@@ -59,7 +59,6 @@ class roleMenu(commands.Cog):
                 # This function gets the role that is supposed to be used
                 role = discord.utils.get(guild.roles, name=reactionRoles[reaction.name])
 
-                print('Role Menu Found')
                 if role is not None:
                     # Find the member based off the user ID
                     member = discord.utils.find(lambda m: m.id == userID, guild.members)
@@ -96,7 +95,6 @@ class roleMenu(commands.Cog):
                 # This function gets the role that is supposed to be used
                 role = discord.utils.get(guild.roles, name=reactionRoles[reaction.name])
 
-                print('Role Menu Found')
                 if role is not None:
                     # Find the member based off the user ID
                     member = discord.utils.find(lambda m: m.id == userID, guild.members)
@@ -138,7 +136,6 @@ class roleMenu(commands.Cog):
 
             # Grabs the messageID of the last message sent by the bot
             reactionMsg = ctx.channel.history(limit=1).messageable.last_message
-            print(f'Reaction Message ID: {reactionMsg.id}')
 
             userReaction, user = await self.client.wait_for('reaction_add', timeout=60.0)  # Gets the users reaction to the reaction message
             reactionRole[userReaction.emoji] = roles[0]  # Adds the reaction and role to the reactionRole dictionary
@@ -167,6 +164,7 @@ class roleMenu(commands.Cog):
         await ctx.channel.purge(limit=2)
         await ctx.channel.send(content='Role Menu Create!', delete_after=3)  # Tells the user that the menu has been created and then deletes the message
 
+    # Ping command to see if the file is loaded
     @commands.command(hidden=True)
     async def ping3(self, ctx):
         await ctx.channel.send('Pong! RMe')

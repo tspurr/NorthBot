@@ -20,12 +20,12 @@ async def on_ready():
     await client.change_presence(activity=discord.Game("With Myself"), status=discord.Status.idle)
 
 
-@client.command()
+@client.command(hidden=True)
 async def load(ctx, extension):
     client.load_extension(f'cogs.{extension}')
 
 
-@client.command()
+@client.command(hidden=True)
 async def unload(ctx, extension):
     client.unload_extension(f'cogs.{extension}')
 
@@ -36,7 +36,7 @@ for filename in os.listdir('./cogs'):
 
 
 # Terminates the bot so that the python program stops running when code needs to be updated
-@client.command()
+@client.command(hidden=True)
 @commands.is_owner()
 async def shutdown(ctx):
     await client.close()

@@ -11,6 +11,9 @@ file.close()
 # MongoDB initialization
 cluster = MongoClient(connectionURL)
 
+# Embed Color
+embedColor = discord.Color.green()
+
 
 class serverStatistics(commands.Cog):
 
@@ -42,20 +45,37 @@ class serverStatistics(commands.Cog):
             post = {"_id": ctx.channel.id, "cName": ctx.channel.name, "numMessages": 1}
             channelCollection.insert_one(post)
         else:
-            query = {"_id": ctx.channel.id}
-            user = channelCollection.find(query)
-            for result in user:
-                numMessages = result["numMessages"]
-            numMessages += 1
-            channelCollection.update_one({"_id": ctx.channel.id}, {"$set": {"numMessages": numMessages}})
+            channelCollection.update_one({"_id": ctx.channel.id}, {"$inc": {"numMessages": 1}})
 
     """###################################################
     #                     Commands                       #
     ###################################################"""
 
+    # TODO Gets the most talked in channel
+
+    # TODO Gets the least talked in channel
+
+    # TODO Gets general server statistics (responds in embed)
+
+    # Ping command to see the latency of the bot
+    @commands.command()
+    async def ping(self, ctx):
+        embed = discord.Embed(
+            description='Pong!',
+            color=embedColor
+        )
+        embed.set_footer(text=f'{round (self.client.latency * 1000)}ms')
+        await ctx.channel.send(embed=embed)
+
+    # Ping command to see if the file is loaded
     @commands.command(hidden=True)
     async def ping2(self, ctx):
-        await ctx.channel.send('Pong! SS')
+        embed = discord.Embed(
+            description='Pong!',
+            color=embedColor
+        )
+        embed.set_footer(text=f'serverStatistics.py online')
+        await ctx.channel.send(embed=embed)
 
 
 def setup(client):

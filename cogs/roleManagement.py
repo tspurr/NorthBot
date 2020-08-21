@@ -62,6 +62,7 @@ class roleManagement(commands.Cog):
         else:
             await ctx.channel.send(f'No Role Group named {args[0]}!')
 
+    # Ping command to see if the file is loaded
     @commands.command(hidden=True)
     async def ping4(self, ctx):
         await ctx.channel.send('Pong! RMe')

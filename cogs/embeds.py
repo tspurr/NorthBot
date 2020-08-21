@@ -38,6 +38,7 @@ class embeds(commands.Cog):
 
         await ctx.send(embed=embed)
 
+    # Ping command to see if the file is loaded
     @commands.command(hidden=True)
     async def ping1(self, ctx):
         await ctx.channel.send('Pong! EM')

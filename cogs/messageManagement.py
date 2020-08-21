@@ -67,12 +67,25 @@ class messageManagement(commands.Cog):
         messageContent = ctx.content.split(" ")
 
         dataBase = cluster[str(serverID)]
-        collection = dataBase["serverInfo"]
+        serverInfo = dataBase["serverInfo"]
+        userData = dataBase["userData"]
 
-        query = collection.find_one({"_id": serverID}, {"_id": 0, "messageRestrictions": 1})
-        print(query['messageRestrictions'])
+        query = serverInfo.find_one({"_id": serverID}, {"_id": 0, "messageRestrictions": 1})
         if query['messageRestrictions']:
             if badWord(messageContent):
+
+                # Adds one to the number of warnings given to a user in the server
+                if userData.count_documents({"_id": int(ctx.author.id)}) == 0:
+                    idContent = dict()
+                    idContent[str(ctx.id)] = ctx.content
+                    post = {"_id": ctx.author.id, "name": ctx.author.name, "idContent": idContent, "warnings": 1}
+                    userData.insert_one(post)
+                else:
+                    # increments the warnings by one
+                    userData.update_one({"_id": int(ctx.author.id)}, {"$inc": {"warnings": 1}})
+                    # updates the idContent dictionary in the database
+                    userData.update_one({"_id": int(ctx.author.id)}, {"$set": {f'idContent.{str(ctx.id)}': ctx.content}})
+
                 await ctx.channel.purge(limit=1)
                 await ctx.channel.send("^^ BAD WORD! WATCH YOUR LANGUAGE!")
 
@@ -103,17 +116,18 @@ class messageManagement(commands.Cog):
         serverID = ctx.guild.id
 
         dataBase = cluster[str(serverID)]
-        collection = dataBase["serverInfo"]
+        serverInfo = dataBase["serverInfo"]
 
         if onOff:
             query = {"_id": serverID}
             newValue = {"$set", {"messageRestrictions": True}}
-            collection.update_one(query, newValue)
+            serverInfo.update_one(query, newValue)
         else:
             query = {"_id": serverID}
             newValue = {"$set", {"messageRestrictions": False}}
-            collection.update_one(query, newValue)
+            serverInfo.update_one(query, newValue)
 
+    # Ping command to see if the file is loaded
     @commands.command(hidden=True)
     async def ping5(self, ctx):
         await ctx.channel.send('Pong! MM')
