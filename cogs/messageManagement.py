@@ -27,9 +27,15 @@ class messageManagement(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    ######################################################
+    """###################################################
     #                      Events                        #
-    ######################################################
+    ###################################################"""
+
+    #Sends the new member a welcome message
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        await member.create_dm()
+        await member.dm_channel.send(f'HI {member.name} welcome to {member.guild.name}!\nMake sure to go check out rules and roles!\nLastly make sure to have fun!')
 
     # Showing messageManagment is loaded
     @commands.Cog.listener()
@@ -70,9 +76,9 @@ class messageManagement(commands.Cog):
                 await ctx.channel.purge(limit=1)
                 await ctx.channel.send("^^ BAD WORD! WATCH YOUR LANGUAGE!")
 
-    ######################################################
+    """###################################################
     #                     Commands                       #
-    ######################################################
+    ###################################################"""
 
     # Saying Hello to anyone who wants to say hi
     @commands.command()
@@ -80,19 +86,19 @@ class messageManagement(commands.Cog):
         await ctx.send('Hello')
 
     # Deleting a specific NUMBER of messages anywhere
-    @commands.command(name='delete', description='Delete 1-100 messages in a channel')
+    @commands.command()
     async def delete(self, ctx, arg):
-        if ctx.message.author.server_permissions.administrator:  # Have to be an administrator to run
+        if ctx.message.author.guild_permissions.administrator:  # Have to be an administrator to run
             if int(arg) > 100:
                 await ctx.channel.purge(limit=100)
                 await ctx.channel.send('Limit 100 deletions!')
             else:
-                await ctx.channel.purge(limit=int(arg))
+                await ctx.channel.purge(limit=int(arg)+1)
         else:
             await ctx.channel.send (f'Sorry {ctx.message.author} you do not have permissions!')
 
     # Turning on message restrictions
-    @commands.command(name='Enable Message Restrictions', description='Doesn\'t allow users to use fowl language')
+    @commands.command()
     async def profanityFilter(self, ctx, onOff):
         serverID = ctx.guild.id
 
@@ -107,6 +113,10 @@ class messageManagement(commands.Cog):
             query = {"_id": serverID}
             newValue = {"$set", {"messageRestrictions": False}}
             collection.update_one(query, newValue)
+
+    @commands.command(hidden=True)
+    async def ping5(self, ctx):
+        await ctx.channel.send('Pong! MM')
 
 
 def setup(client):

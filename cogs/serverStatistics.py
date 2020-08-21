@@ -17,9 +17,9 @@ class serverStatistics(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    ######################################################
+    """###################################################
     #                      Events                        #
-    ######################################################
+    ###################################################"""
 
     # Event Showing serverStatistics is loaded
     @commands.Cog.listener()
@@ -49,9 +49,13 @@ class serverStatistics(commands.Cog):
             numMessages += 1
             channelCollection.update_one({"_id": ctx.channel.id}, {"$set": {"numMessages": numMessages}})
 
-    ######################################################
+    """###################################################
     #                     Commands                       #
-    ######################################################
+    ###################################################"""
+
+    @commands.command(hidden=True)
+    async def ping2(self, ctx):
+        await ctx.channel.send('Pong! SS')
 
 
 def setup(client):

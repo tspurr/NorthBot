@@ -8,20 +8,20 @@ class embeds(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    ######################################################
+    """###################################################
     #                      Events                        #
-    ######################################################
+    ###################################################"""
 
     # Event Showing serverStatistics is loaded
     @commands.Cog.listener()
     async def on_ready(self):
         print('\t- Loaded embeds')
 
-    ######################################################
+    """###################################################
     #                     Commands                       #
-    ######################################################
+    ###################################################"""
 
-    @commands.command()
+    @commands.command(hidden=True)
     async def testEmbed(self, ctx):
         embed = discord.Embed(
             title='title',
@@ -37,6 +37,10 @@ class embeds(commands.Cog):
         embed.add_field(name='Field Name', value='Description', inline=True)
 
         await ctx.send(embed=embed)
+
+    @commands.command(hidden=True)
+    async def ping1(self, ctx):
+        await ctx.channel.send('Pong! EM')
 
 
 def setup(client):

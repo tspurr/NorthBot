@@ -17,23 +17,21 @@ class roleManagement(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    ######################################################
+    """###################################################
     #                      Events                        #
-    ######################################################
+    ###################################################"""
 
     # Event Showing roleManagement is loaded
     @commands.Cog.listener()
     async def on_ready(self):
         print('\t- Loaded roleManagement')
 
-    ######################################################
+    """###################################################
     #                     Commands                       #
-    ######################################################
+    ###################################################"""
 
     #  Create a Role Group
-    @commands.command(name='Create Role Group',
-                      description='Creates a Group of roles format: .createRG [name] role1 role2 ...\n'
-                                  '(You cannot have two roles with the same name!)')
+    @commands.command()
     async def createRG(self, ctx, *args):
         guildID = ctx.guild.id
         dataBase = cluster[str(guildID)]
@@ -50,7 +48,7 @@ class roleManagement(commands.Cog):
                                    f'\nTry running .deleteRG {args[0]}')
 
     # Deletes a Role Group
-    @commands.command(name='Delete Role Group', description='Deletes a group of roles format: .deleteRG [name]')
+    @commands.command()
     async def deleteRG(self, ctx, *args):
         guildID = ctx.guild.id
         dataBase = cluster[str(guildID)]
@@ -63,6 +61,10 @@ class roleManagement(commands.Cog):
             await ctx.channel.send(f'Role Group {args[0]} deleted!')
         else:
             await ctx.channel.send(f'No Role Group named {args[0]}!')
+
+    @commands.command(hidden=True)
+    async def ping4(self, ctx):
+        await ctx.channel.send('Pong! RMe')
 
 
 def setup(client):
