@@ -36,7 +36,7 @@ class roleMenu(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        reactionName = payload.emoji
+        reaction = payload.emoji
         messageID = payload.message_id
         userID = payload.user_id
         guildID = payload.guild_id
@@ -47,17 +47,17 @@ class roleMenu(commands.Cog):
 
         # Checks to see if the collection exists
         if menu.count() != 0:
-            query = menu.find_one({"_id": messageID})
+            query = menu.find_one({"_id": int(messageID)})
 
             # If the messages being reacted to is a roleMenu
-            if menu.count_documents(query) == 1:
+            if menu.count_documents({"_id": int(messageID)}) == 1:
 
                 # Gets the dictionary to define what role name results from the emoji reacted
                 reactionRoles = query['reactionRole']
 
                 # Reaction roles returns the name of the role that is supposed to be returned based off the emoji used
                 # This function gets the role that is supposed to be used
-                role = discord.utils.get(guild.roles, name=reactionRoles[reactionName])
+                role = discord.utils.get(guild.roles, name=reactionRoles[reaction.name])
 
                 print('Role Menu Found')
                 if role is not None:
@@ -73,7 +73,7 @@ class roleMenu(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
-        reactionName = payload.emoji.name
+        reaction = payload.emoji
         messageID = payload.message_id
         userID = payload.user_id
         guildID = payload.guild_id
@@ -84,17 +84,17 @@ class roleMenu(commands.Cog):
 
         # Checks to see if the collection exists
         if menu.count() != 0:
-            query = menu.find_one({"_id": messageID})
+            query = menu.find_one({"_id": int(messageID)})
 
             # If the messages being reacted to is a roleMenu
-            if menu.count_documents(query) == 1:
+            if menu.count_documents({"_id": int(messageID)}) == 1:
 
                 # Gets the dictionary to define what role name results from the emoji reacted
                 reactionRoles = query['reactionRole']
 
                 # Reaction roles returns the name of the role that is supposed to be returned based off the emoji used
                 # This function gets the role that is supposed to be used
-                role = discord.utils.get(guild.roles, name=reactionRoles[reactionName])
+                role = discord.utils.get(guild.roles, name=reactionRoles[reaction.name])
 
                 print('Role Menu Found')
                 if role is not None:
@@ -114,7 +114,7 @@ class roleMenu(commands.Cog):
     @commands.command()
     async def createRM(self, ctx, messageID, roleGroup):
         # Variables
-        reactionRole = {"": ""}
+        reactionRole = dict()
         guildID = ctx.message.guild.id
         reactionMenu = await ctx.channel.fetch_message(messageID)  # should get the reaction menu message
 
@@ -141,7 +141,7 @@ class roleMenu(commands.Cog):
             print(f'Reaction Message ID: {reactionMsg.id}')
 
             userReaction, user = await self.client.wait_for('reaction_add', timeout=60.0)  # Gets the users reaction to the reaction message
-            reactionRole[userReaction] = roles[0]  # Adds the reaction and role to the reactionRole dictionary
+            reactionRole[userReaction.emoji] = roles[0]  # Adds the reaction and role to the reactionRole dictionary
             await reactionMenu.add_reaction(userReaction)  # Adds the reaction to the reaction menu
             await reactionMsg.clear_reactions()  # Clear the reactions on the reaction menu for the next role
 
@@ -152,12 +152,12 @@ class roleMenu(commands.Cog):
                     await reactionMsg.edit(content=f'Add reaction to this message for: ```[{role}]```')
 
                     userReaction, user = await self.client.wait_for('reaction_add', timeout=60.0)
-                    reactionRole[userReaction] = role  # Adds the reaction and role to the reactionRole dictionary
+                    reactionRole[userReaction.emoji] = role  # Adds the reaction and role to the reactionRole dictionary
                     await reactionMenu.add_reaction(userReaction)  # Adds the reaction to the reaction menu
                     await reactionMsg.clear_reactions()  # Clear the reactions on the reaction menu for the next role
 
             # Adds the role menu to the roleMenus collection in the data base
-            post = {"_id": messageID, "cName": ctx.channel.name, "reactionRole": reactionRole}
+            post = {"_id": int(messageID), "cName": ctx.channel.name, "reactionRole": reactionRole}
             menus.insert_one(post)
 
         else:
@@ -165,6 +165,7 @@ class roleMenu(commands.Cog):
 
         # Deletes all roleMenu setup messages
         await ctx.channel.purge(limit=2)
+        await ctx.channel.send(content='Role Menu Create!', delete_after=3)  # Tells the user that the menu has been created and then deletes the message
 
     @commands.command(hidden=True)
     async def ping3(self, ctx):
