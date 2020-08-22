@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-import pymongo
 from pymongo import MongoClient
 
 # Getting the NorthBot mongoDB connection URL
@@ -34,6 +33,7 @@ class roleMenu(commands.Cog):
     async def on_ready(self):
         print('\t- Loaded roleMenu')
 
+    # If the user is removing their reaction to the role menu it takes the role associated with the emoji away, if the message is a role menu
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         reaction = payload.emoji
@@ -42,6 +42,7 @@ class roleMenu(commands.Cog):
         guildID = payload.guild_id
         guild = discord.utils.find(lambda g: g.id == guildID, self.client.guilds)
 
+        # Grabs the roleMenu collection from MongoDB
         db = cluster[str(guildID)]
         menu = db["roleMenus"]
 
@@ -70,6 +71,7 @@ class roleMenu(commands.Cog):
         else:
             return
 
+    # If the user is removing their reaction to the role menu it takes the role associated with the emoji away, if the message is a role menu
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
         reaction = payload.emoji
@@ -109,6 +111,7 @@ class roleMenu(commands.Cog):
     """###################################################
     #                     Commands                       #
     ###################################################"""
+    # Reaction role menu creation
     @commands.command()
     async def createRM(self, ctx, messageID, roleGroup):
         # Variables

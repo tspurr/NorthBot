@@ -1,11 +1,9 @@
 import os
 import discord
 from discord.ext import commands
-import pymongo
-from pymongo import MongoClient
 
 # Getting the bot token
-file = open("token.txt")
+file = open("discordToken.txt")
 TOKEN = file.read()
 file.close()
 
@@ -41,6 +39,7 @@ for filename in os.listdir('./cogs'):
 async def shutdown(ctx):
     await client.close()
     print('Bot closed')
+
 
 # Token to Identify which bot is being called, and running the code
 client.run(TOKEN)

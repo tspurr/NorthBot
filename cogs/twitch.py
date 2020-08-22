@@ -1,9 +1,16 @@
 import discord
 from discord.ext import commands
+from pymongo import MongoClient
 
-# Todo rename this file to something more useful
+# Getting the NorthBot mongoDB connection URL
+file = open("mongoURL.txt")
+connectionURL = file.read()
+file.close()
 
-class embeds(commands.Cog):
+# MongoDB initialization
+cluster = MongoClient(connectionURL)
+
+class twitch(commands.Cog):
 
     def __init__(self, client):
         self.client = client
@@ -15,7 +22,28 @@ class embeds(commands.Cog):
     # Event Showing serverStatistics is loaded
     @commands.Cog.listener()
     async def on_ready(self):
-        print('\t- Loaded embeds')
+        print('\t- Loaded twitch')
+
+    # Checks for people in a discord server who went live and makes a notification about it
+    @commands.Cog.listener()
+    async def my_background_task(self):
+        # Variables
+        twitchColor = discord.colour()
+        youtubeColor = discord.color()
+
+        # TODO Gets the serverID and the channel that it should notify streams to
+        dataBase = cluster[serverID]
+
+        # TODO Check to see if user activity has changed (ON DESKTOP)
+
+            # TODO if the activity is streaming
+
+                # TODO create and embed (Twitch and YouTube Color difference)
+
+                # TODO put all stream info into the embed
+
+                # TODO check database for stream announcement changes for specific servers
+                # TODO could be different general saying or for specific people different sayings
 
     """###################################################
     #                     Commands                       #
@@ -45,4 +73,4 @@ class embeds(commands.Cog):
 
 
 def setup(client):
-    client.add_cog(embeds(client))
+    client.add_cog(twitch(client))

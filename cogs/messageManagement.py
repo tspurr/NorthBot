@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-import pymongo
 from pymongo import MongoClient
 
 # Getting the NorthBot mongoDB connection URL
@@ -19,6 +18,8 @@ def badWord(message):
         badWords = inFile.readlines()
     inFile.close()
 
+    # Returns true if a word in the message matches words in badWords.txt
+    # The word[:-1] is to get rid of the \n that comes from readLines() function
     return any(word[:-1] in message for word in badWords)
 
 
@@ -31,17 +32,22 @@ class messageManagement(commands.Cog):
     #                      Events                        #
     ###################################################"""
 
-    #Sends the new member a welcome message
+    # Sends the new member a welcome message
     @commands.Cog.listener()
     async def on_member_join(self, member):
         await member.create_dm()
         await member.dm_channel.send(f'HI {member.name} welcome to {member.guild.name}!\nMake sure to go check out rules and roles!\nLastly make sure to have fun!')
+
+    # TODO on_server_join() serverStats?
+
+    # TODO on_server_remove() serverStats?
 
     # Showing messageManagment is loaded
     @commands.Cog.listener()
     async def on_ready(self):
         print('\t- Loaded messageManagement')
 
+        # TODO This should be an on_server_join or something, won't update when it joins a new server
         servers = self.client.guilds
         serverNames = discord.Guild.name
 
@@ -51,15 +57,17 @@ class messageManagement(commands.Cog):
 
             query = {"_id": server.id}
             if collection.count_documents(query) == 0:
-                post = {"_id": server.id, "serverName": server.name, "messageRestrictions": False}
+                post = {"_id": server.id, "serverName": server.name, "messageRestrictions": False, "reputation": False}
                 collection.insert_one(post)
 
     # Deleting all TEXT messages in a specific channel
     @commands.Cog.listener()
     async def on_message(self, ctx):
+        # Does not count bot messages
         if ctx.author.bot:
             return
 
+        # Makes it so you cannot send anything besides pictures to the channel pictures
         if str(ctx.channel) == "pics" and ctx.content != "":
             await ctx.channel.purge(limit=1)
 
@@ -70,24 +78,37 @@ class messageManagement(commands.Cog):
         serverInfo = dataBase["serverInfo"]
         userData = dataBase["userData"]
 
-        query = serverInfo.find_one({"_id": serverID}, {"_id": 0, "messageRestrictions": 1})
+        # Update the number of messages a user has sent in the server
+        # TODO ask gregory about upsert (can't find it)
+        query = serverInfo.find_one({"_id": serverID})
         if query['messageRestrictions']:
             if badWord(messageContent):
 
-                # Adds one to the number of warnings given to a user in the server
+                # Adds one to the number of warnings and numMessages given to a user in the server
                 if userData.count_documents({"_id": int(ctx.author.id)}) == 0:
-                    idContent = dict()
-                    idContent[str(ctx.id)] = ctx.content
-                    post = {"_id": ctx.author.id, "name": ctx.author.name, "idContent": idContent, "warnings": 1}
+                    badMessages = dict()
+                    badMessages[str(ctx.id)] = ctx.content
+                    post = {"_id": ctx.author.id, "name": ctx.author.name, "badMessages": badMessages, "warnings": 1, "numMessages": 1}
                     userData.insert_one(post)
                 else:
-                    # increments the warnings by one
-                    userData.update_one({"_id": int(ctx.author.id)}, {"$inc": {"warnings": 1}})
-                    # updates the idContent dictionary in the database
-                    userData.update_one({"_id": int(ctx.author.id)}, {"$set": {f'idContent.{str(ctx.id)}': ctx.content}})
+                    # increments the warnings and number of messages the user sent by one
+                    userData.update_one({"_id": int(ctx.author.id)}, {"$inc": {"warnings": 1, "numMessages": 1}})
+                    # updates the badMessages dictionary in the database
+                    userData.update_one({"_id": int(ctx.author.id)}, {"$set": {f'badMessages.{str(ctx.id)}': ctx.content}})
 
                 await ctx.channel.purge(limit=1)
-                await ctx.channel.send("^^ BAD WORD! WATCH YOUR LANGUAGE!")
+
+                embed = discord.Embed(
+                    title='BAD WORD! WATCH YOUR LANGUAGE!',
+                    color=discord.Color.red()
+                )
+                embed.set_footer(text=f'{ctx.author}')
+
+                # Sends the embed and will delete it after 240 seconds
+                await ctx.channel.send(embed=embed, delete_after=240)
+            else:
+                # increments the numMessages by one, if there are no bad words
+                userData.update_one({"_id": int(ctx.author.id)}, {"$inc": {"numMessages": 1}})
 
     """###################################################
     #                     Commands                       #
@@ -110,7 +131,7 @@ class messageManagement(commands.Cog):
         else:
             await ctx.channel.send (f'Sorry {ctx.message.author} you do not have permissions!')
 
-    # Turning on message restrictions
+    # Turning on/off message restrictions
     @commands.command()
     async def profanityFilter(self, ctx, onOff):
         serverID = ctx.guild.id
@@ -119,13 +140,9 @@ class messageManagement(commands.Cog):
         serverInfo = dataBase["serverInfo"]
 
         if onOff:
-            query = {"_id": serverID}
-            newValue = {"$set", {"messageRestrictions": True}}
-            serverInfo.update_one(query, newValue)
+            serverInfo.update_one({"_id": serverID}, {"$set": {"messageRestrictions": True}})
         else:
-            query = {"_id": serverID}
-            newValue = {"$set", {"messageRestrictions": False}}
-            serverInfo.update_one(query, newValue)
+            serverInfo.update_one({"_id": serverID}, {"$set": {"messageRestrictions": False}})
 
     # Ping command to see if the file is loaded
     @commands.command(hidden=True)
