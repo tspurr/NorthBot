@@ -28,6 +28,58 @@ class serverStatistics(commands.Cog):
     async def on_ready(self):
         print('\t- Loaded serverStatistics')
 
+    # Creates the dataBase for when the bot joins a discord server
+    @commands.Cog.listener()
+    async def on_server_join(self, server):
+
+        serverID = server.id
+        serverName = server.Name
+        numMembers = 0
+
+        # Counting the number of members in a server
+        # Might be a server.member.size or something
+        # TODO look into if members is a list then you can use len(server.members)
+        for members in server.members:
+            numMembers += 1
+
+        print(f'Joined {serverName}!')
+
+        dataBase = cluster[serverID]
+        collection = dataBase["serverInfo"]
+
+        # Creates default information for a server on join
+        post = {"_id": server.id, "serverName": server.name, "numMembers": numMembers, "messageRestrictions": False, "reputation": False}
+        collection.insert_one(post)
+
+    # Deletes the data base for the server?!?
+    @commands.Cog.listener()
+    async def on_server_leave(self, server):
+        serverID = server.id
+        serverName = server.Name
+
+        print(f'Left {serverName}!')
+
+        # This should delete the server data
+        cluster.drop_database(serverID)
+
+    # Add one to numMembers on server
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        serverID = member.guild.id
+        dataBase = cluster[serverID]
+        collection = dataBase["serverInfo"]
+
+        collection.update_one({"_id": serverID}, {"$inc": {"numMembers": 1}})
+
+    # Subtract one on member leave
+    @commands.Cog.listener()
+    async def on_member_leave(self, member):
+        serverID = member.guild.id
+        dataBase = cluster[serverID]
+        collection = dataBase["serverInfo"]
+
+        collection.update_one({"_id": serverID}, {"$inc": {"numMembers": -1}})
+
     # Keeps track of all the messages sent in servers and adds them to a mongoDB
     @commands.Cog.listener()
     async def on_message(self, ctx):
