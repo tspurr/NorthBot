@@ -11,7 +11,7 @@ file.close()
 cluster = MongoClient(connectionURL)
 
 
-class roleManagement(commands.Cog):
+class roleManagement(commands.Cog, name='Role Management'):
 
     def __init__(self, client):
         self.client = client
@@ -60,6 +60,11 @@ class roleManagement(commands.Cog):
             await ctx.channel.send(f'Role Group {args[0]} deleted!')
         else:
             await ctx.channel.send(f'No Role Group named {args[0]}!')
+
+
+    # TODO insertOneRG (insert a role into a role group)
+
+    # TODO deleteOneRG (delete a role from a role group)
 
     # Ping command to see if the file is loaded
     @commands.command(hidden=True)

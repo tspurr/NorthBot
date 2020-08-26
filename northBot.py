@@ -8,7 +8,8 @@ TOKEN = file.read()
 file.close()
 
 # Turns the Bot Online
-client = commands.Bot(command_prefix='.')
+client = commands.Bot(command_prefix=commands.when_mentioned_or('.'))  # When the bot is mentioned or the . is used
+client.remove_command('help')
 
 
 # On Startup the bot prints that it has logged in

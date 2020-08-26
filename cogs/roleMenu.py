@@ -19,7 +19,7 @@ async def menuReaction(userReactionEmoji, menu):
     return False
 
 
-class roleMenu(commands.Cog):
+class roleMenu(commands.Cog, name='Role Menu'):
 
     def __init__(self, client):
         self.client = client

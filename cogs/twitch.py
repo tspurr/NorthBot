@@ -10,7 +10,8 @@ file.close()
 # MongoDB initialization
 cluster = MongoClient(connectionURL)
 
-class twitch(commands.Cog):
+
+class twitch(commands.Cog, name='Twitch/YouTube'):
 
     def __init__(self, client):
         self.client = client

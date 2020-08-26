@@ -23,7 +23,7 @@ def badWord(message):
     return any(word[:-1] in message for word in badWords)
 
 
-class messageManagement(commands.Cog):
+class messageManagement(commands.Cog, name='Message Management'):
 
     def __init__(self, client):
         self.client = client
@@ -38,6 +38,7 @@ class messageManagement(commands.Cog):
         print('\t- Loaded messageManagement')
 
     # Deleting all TEXT messages in a specific channel
+    # Checks for bad messages DOES NOT CREATE USER INFO
     @commands.Cog.listener()
     async def on_message(self, ctx):
         # Does not count bot messages
@@ -69,7 +70,7 @@ class messageManagement(commands.Cog):
                 await ctx.channel.purge(limit=1)
 
                 embed = discord.Embed(
-                    title='BAD WORD! WATCH YOUR LANGUAGE!',
+                    title='Bad Word! Watch Your Language!',
                     color=discord.Color.red()
                 )
                 embed.set_footer(text=f'{ctx.author}')

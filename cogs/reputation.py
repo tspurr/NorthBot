@@ -11,7 +11,7 @@ file.close()
 cluster = MongoClient(connectionURL)
 
 
-class reputation(commands.Cog):
+class reputation(commands.Cog, name='Reputation'):
 
     def __init__(self, client):
         self.client = client
@@ -74,7 +74,9 @@ class reputation(commands.Cog):
         if ctx.author.bot:
             return
 
-        dataBase = cluster[ctx.guild.id]
+        serverID = ctx.guild.id
+
+        dataBase = cluster[str(serverID)]
         userData = dataBase["userData"]
 
         # Update the number of messages by one when the user talks
@@ -95,6 +97,22 @@ class reputation(commands.Cog):
     # TODO Rep give
 
     # TODO Extra points
+
+    # Refreshes the user list incase the data was deleted in the database
+    @commands.command(hidden=True)
+    async def refreshUsers(self, ctx):
+        serverID = ctx.guild.id
+        members = ctx.guild.members
+
+        dataBase = cluster[serverID]
+        userData = dataBase["userInfo"]
+
+        # Going through all the members in a server when the bot is added
+        for member in members:
+            badMessages = dict()
+            newUser = {"_id": member.id, "name": member.name, "badMessages": badMessages, "warnings": 0,
+                       "numMessages": 0}
+            userData.insert_one(newUser)
 
     @commands.command(hidden=True)
     async def ping6(self, ctx):

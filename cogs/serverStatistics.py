@@ -14,7 +14,7 @@ cluster = MongoClient(connectionURL)
 embedColor = discord.Color.green()
 
 
-class serverStatistics(commands.Cog):
+class serverStatistics(commands.Cog, name='Server Statistics'):
 
     def __init__(self, client):
         self.client = client
@@ -48,7 +48,8 @@ class serverStatistics(commands.Cog):
         collection = dataBase["serverInfo"]
 
         # Creates default information for a server on join
-        post = {"_id": server.id, "serverName": server.name, "numMembers": numMembers, "messageRestrictions": False, "reputation": False}
+        post = {"_id": server.id, "serverName": server.name, "numMembers": numMembers,
+                "messageRestrictions": False, "reputation": False, "announceStreams": False}
         collection.insert_one(post)
 
     # Deletes the data base for the server?!?
@@ -81,22 +82,23 @@ class serverStatistics(commands.Cog):
         collection.update_one({"_id": serverID}, {"$inc": {"numMembers": -1}})
 
     # Keeps track of all the messages sent in servers and adds them to a mongoDB
+    # DOES NOT TRACK USER MESSAGES THAT THEY SEND
     @commands.Cog.listener()
     async def on_message(self, ctx):
         if ctx.author.bot:
             return
 
         dataBase = cluster[str(ctx.guild.id)]
-        channelCollection = dataBase["channelData"]
+        channelData = dataBase["channelData"]
 
         print(f"{ctx.channel}: {ctx.author}: {ctx.author.name}: {ctx.content}")
 
         myquery = {"_id": ctx.channel.id}
-        if channelCollection.count_documents(myquery) == 0:
+        if channelData.count_documents(myquery) == 0:
             post = {"_id": ctx.channel.id, "cName": ctx.channel.name, "numMessages": 1}
-            channelCollection.insert_one(post)
+            channelData.insert_one(post)
         else:
-            channelCollection.update_one({"_id": ctx.channel.id}, {"$inc": {"numMessages": 1}})
+            channelData.update_one({"_id": ctx.channel.id}, {"$inc": {"numMessages": 1}})
 
     """###################################################
     #                     Commands                       #
@@ -107,6 +109,29 @@ class serverStatistics(commands.Cog):
     # TODO Gets the least talked in channel
 
     # TODO Gets general server statistics (responds in embed)
+
+    @commands.command(hidden=True)
+    async def serverRefresh(self, ctx):
+        serverID = ctx.guild.id
+        serverName = ctx.guild.name
+        members = ctx.guild.members  # This probably doesn't work
+        numMembers = 0
+        dataBase = cluster[str(serverID)]
+        collection = dataBase["serverInfo"]
+        query = {"_id": serverID}
+
+        for member in members:
+            numMembers += 1
+
+        # If the server document is not found in the collection then we insert a new one
+        if collection.count_documents(query) == 0:
+            post = {"_id": serverID, "serverName": serverName, "numMembers": numMembers,
+                    "messageRestrictions": False, "reputation": False, "announceStreams": False}
+            collection.insert_one(post)
+
+            await ctx.channel.send("Server info refreshed")
+        else:
+            return
 
     # Ping command to see the latency of the bot
     @commands.command()
