@@ -3,7 +3,7 @@ from discord.ext import commands
 from pymongo import MongoClient
 
 # Getting the NorthBot mongoDB connection URL
-file = open("mongoURL.txt")
+file = open('mongoURL.txt')
 connectionURL = file.read()
 file.close()
 
@@ -44,14 +44,14 @@ class roleMenu(commands.Cog, name='Role Menu'):
 
         # Grabs the roleMenu collection from MongoDB
         db = cluster[str(guildID)]
-        menu = db["roleMenus"]
+        menu = db['roleMenus']
 
         # Checks to see if the collection exists
         if menu.count() != 0:
-            query = menu.find_one({"_id": int(messageID)})
+            query = menu.find_one({'_id': int(messageID)})
 
             # If the messages being reacted to is a roleMenu
-            if menu.count_documents({"_id": int(messageID)}) == 1:
+            if menu.count_documents({'_id': int(messageID)}) == 1:
 
                 # Gets the dictionary to define what role name results from the emoji reacted
                 reactionRoles = query['reactionRole']
@@ -81,14 +81,14 @@ class roleMenu(commands.Cog, name='Role Menu'):
         guild = discord.utils.find(lambda g: g.id == guildID, self.client.guilds)
 
         db = cluster[str(guildID)]
-        menu = db["roleMenus"]
+        menu = db['roleMenus']
 
         # Checks to see if the collection exists
         if menu.count() != 0:
-            query = menu.find_one({"_id": int(messageID)})
+            query = menu.find_one({'_id': int(messageID)})
 
             # If the messages being reacted to is a roleMenu
-            if menu.count_documents({"_id": int(messageID)}) == 1:
+            if menu.count_documents({'_id': int(messageID)}) == 1:
 
                 # Gets the dictionary to define what role name results from the emoji reacted
                 reactionRoles = query['reactionRole']
@@ -121,11 +121,11 @@ class roleMenu(commands.Cog, name='Role Menu'):
 
         # Database access and pulling
         dataBase = cluster[str(guildID)]
-        menus = dataBase["roleMenus"]
+        menus = dataBase['roleMenus']
 
         # Checks if the role group exists
-        if dataBase["roleGroups"].find_one({"_id": roleGroup}, {"_id": 0, "roleNames": 1}):  # Gets the mongo object
-            rolesQuery = dataBase["roleGroups"].find_one({"_id": roleGroup}, {"_id": 0, "roleNames": 1})
+        if dataBase['roleGroups'].find_one({'_id': roleGroup}, {'_id': 0, 'roleNames': 1}):  # Gets the mongo object
+            rolesQuery = dataBase['roleGroups'].find_one({'_id': roleGroup}, {'_id': 0, 'roleNames': 1})
         else:
             await ctx.channel.send(f'No role group {roleGroup} found!')
             return
@@ -133,7 +133,7 @@ class roleMenu(commands.Cog, name='Role Menu'):
         roles = rolesQuery['roleNames']  # Get the array of roles from the mongo object
 
         # Reaction Handling
-        if menus.count_documents({"_id": messageID}) == 0:
+        if menus.count_documents({'_id': messageID}) == 0:
             # Sends the message to react to
             await ctx.channel.send(f'Add reaction to this message for: ```[{roles[0]}]```')
 
@@ -157,7 +157,7 @@ class roleMenu(commands.Cog, name='Role Menu'):
                     await reactionMsg.clear_reactions()  # Clear the reactions on the reaction menu for the next role
 
             # Adds the role menu to the roleMenus collection in the data base
-            post = {"_id": int(messageID), "cName": ctx.channel.name, "reactionRole": reactionRole}
+            post = {'_id': int(messageID), 'cName': ctx.channel.name, 'reactionRole': reactionRole}
             menus.insert_one(post)
 
         else:

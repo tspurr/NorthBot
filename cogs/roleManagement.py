@@ -3,7 +3,7 @@ from discord.ext import commands
 from pymongo import MongoClient
 
 # Getting the NorthBot mongoDB connection URL
-file = open("mongoURL.txt")
+file = open('mongoURL.txt')
 connectionURL = file.read()
 file.close()
 
@@ -34,12 +34,12 @@ class roleManagement(commands.Cog, name='Role Management'):
     async def createRG(self, ctx, *args):
         guildID = ctx.guild.id
         dataBase = cluster[str(guildID)]
-        collection = dataBase["roleGroups"]
+        collection = dataBase['roleGroups']
 
-        myquery = {"_id": args[0]}
+        myquery = {'_id': args[0]}
 
         if collection.count_documents(myquery) == 0:  # Checks if the server has a group with that name already
-            post = {"_id": args[0], 'roleNames': args[1:]}
+            post = {'_id': args[0], 'roleNames': args[1:]}
             collection.insert_one(post)
             await ctx.channel.send(f'Role Group {args[0]} created!')
         else:
@@ -51,9 +51,9 @@ class roleManagement(commands.Cog, name='Role Management'):
     async def deleteRG(self, ctx, *args):
         guildID = ctx.guild.id
         dataBase = cluster[str(guildID)]
-        collection = dataBase["roleGroup"]
+        collection = dataBase['roleGroup']
 
-        myquery = {"_id": args[0]}
+        myquery = {'_id': args[0]}
 
         if collection.count_documents(myquery) == 1:
             collection.delete_one(myquery)

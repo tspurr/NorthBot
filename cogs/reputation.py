@@ -3,7 +3,7 @@ from discord.ext import commands
 from pymongo import MongoClient
 
 # Getting the NorthBot mongoDB connection URL
-file = open("mongoURL.txt")
+file = open('mongoURL.txt')
 connectionURL = file.read()
 file.close()
 
@@ -31,11 +31,11 @@ class reputation(commands.Cog, name='Reputation'):
         await member.dm_channel.send(f'HI {member.name} welcome to {member.guild.name}!\nMake sure to go check out rules and roles!\nLastly make sure to have fun!')
 
         dataBase = cluster[member.guild.id]
-        userData = dataBase["userData"]
+        userData = dataBase['userData']
 
         # Creates a default user for a member in the data base
         badMessages = dict()
-        newUser = {"_id": member.id, "name": member.name, "badMessages": badMessages, "warnings": 0, "numMessages": 0}
+        newUser = {'_id': member.id, 'name': member.name, 'badMessages': badMessages, 'warnings': 0, 'numMessages': 0}
         userData.insert_one(newUser)
 
     # Sends the leaving member a message about leaving the server
@@ -45,11 +45,11 @@ class reputation(commands.Cog, name='Reputation'):
         await member.dm_channel.send(f'Sorry to see you leave {member.guild.name}!')
 
         dataBase = cluster[member.guild.id]
-        userData = dataBase["userData"]
+        userData = dataBase['userData']
 
         # Find the user and delete all the information about them (may not keep this)
         # userData.find_one_and_delete({"_id": member.id})
-        query = {"_id": member.id}
+        query = {'_id': member.id}
         if userData.count_documents(query) == 1:
             userData.delete_one(query)
 
@@ -59,12 +59,12 @@ class reputation(commands.Cog, name='Reputation'):
         serverID = server.id
 
         dataBase = cluster[serverID]
-        userData = dataBase["userInfo"]
+        userData = dataBase['userInfo']
 
         # Going through all the members in a server when the bot is added
         for member in server.members:
             badMessages = dict()
-            newUser = {"_id": member.id, "name": member.name, "badMessages": badMessages, "warnings": 0, "numMessages": 0}
+            newUser = {'_id': member.id, 'name': member.name, 'badMessages': badMessages, 'warnings': 0, 'numMessages': 0}
             userData.insert_one(newUser)
 
 
@@ -77,10 +77,10 @@ class reputation(commands.Cog, name='Reputation'):
         serverID = ctx.guild.id
 
         dataBase = cluster[str(serverID)]
-        userData = dataBase["userData"]
+        userData = dataBase['userData']
 
         # Update the number of messages by one when the user talks
-        userData.update_one({"_id": ctx.author.id}, {"$inc": {"numMessages": 1}})
+        userData.update_one({'_id': ctx.author.id}, {'$inc': {'numMessages': 1}})
 
 
 
@@ -105,13 +105,13 @@ class reputation(commands.Cog, name='Reputation'):
         members = ctx.guild.members
 
         dataBase = cluster[serverID]
-        userData = dataBase["userInfo"]
+        userData = dataBase['userInfo']
 
         # Going through all the members in a server when the bot is added
         for member in members:
             badMessages = dict()
-            newUser = {"_id": member.id, "name": member.name, "badMessages": badMessages, "warnings": 0,
-                       "numMessages": 0}
+            newUser = {'_id': member.id, 'name': member.name, 'badMessages': badMessages, 'warnings': 0,
+                       'numMessages': 0}
             userData.insert_one(newUser)
 
     @commands.command(hidden=True)

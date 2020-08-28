@@ -3,7 +3,7 @@ from discord.ext import commands
 from pymongo import MongoClient
 
 # Getting the NorthBot mongoDB connection URL
-file = open("mongoURL.txt")
+file = open('mongoURL.txt')
 connectionURL = file.read()
 file.close()
 
@@ -32,7 +32,7 @@ class messageManagement(commands.Cog, name='Message Management'):
     #                      Events                        #
     ###################################################"""
 
-    # Showing messageManagment is loaded
+    # Showing messageManagement is loaded
     @commands.Cog.listener()
     async def on_ready(self):
         print('\t- Loaded messageManagement')
@@ -46,26 +46,26 @@ class messageManagement(commands.Cog, name='Message Management'):
             return
 
         # Makes it so you cannot send anything besides pictures to the channel pictures
-        if str(ctx.channel) == "pics" and ctx.content != "":
+        if str(ctx.channel) == 'pics' and ctx.content != "":
             await ctx.channel.purge(limit=1)
 
         serverID = ctx.guild.id
-        messageContent = ctx.content.split(" ")
+        messageContent = ctx.content.split(' ')
 
         dataBase = cluster[str(serverID)]
-        serverInfo = dataBase["serverInfo"]
-        userData = dataBase["userData"]
+        serverInfo = dataBase['serverInfo']
+        userData = dataBase['userData']
 
         # Find if the server has message restrictions on and if they do check the message for bad words and give a warning
-        query = serverInfo.find_one({"_id": serverID})
+        query = serverInfo.find_one({'_id': serverID})
         if query['messageRestrictions']:
 
             if badWord(messageContent):
 
                 # increments the warnings and number of messages the user sent by one
-                userData.update_one({"_id": int(ctx.author.id)}, {"$inc": {"warnings": 1}})
+                userData.update_one({'_id': int(ctx.author.id)}, {'$inc': {'warnings': 1}})
                 # updates the badMessages dictionary in the database
-                userData.update_one({"_id": int(ctx.author.id)}, {"$set": {f'badMessages.{str(ctx.id)}': ctx.content}})
+                userData.update_one({'_id': int(ctx.author.id)}, {'$set': {f'badMessages.{str(ctx.id)}': ctx.content}})
 
                 await ctx.channel.purge(limit=1)
 
@@ -106,12 +106,12 @@ class messageManagement(commands.Cog, name='Message Management'):
         serverID = ctx.guild.id
 
         dataBase = cluster[str(serverID)]
-        serverInfo = dataBase["serverInfo"]
+        serverInfo = dataBase['serverInfo']
 
         if onOff:
-            serverInfo.update_one({"_id": serverID}, {"$set": {"messageRestrictions": True}})
+            serverInfo.update_one({'_id': serverID}, {'$set': {'messageRestrictions': True}})
         else:
-            serverInfo.update_one({"_id": serverID}, {"$set": {"messageRestrictions": False}})
+            serverInfo.update_one({'_id': serverID}, {'$set': {'messageRestrictions': False}})
 
     # Ping command to see if the file is loaded
     @commands.command(hidden=True)

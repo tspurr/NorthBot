@@ -3,7 +3,7 @@ import discord
 from discord.ext import commands
 
 # Getting the bot token
-file = open("discordToken.txt")
+file = open('discordToken.txt')
 TOKEN = file.read()
 file.close()
 
@@ -16,7 +16,7 @@ client.remove_command('help')
 @client.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
-    await client.change_presence(activity=discord.Game("With Myself"), status=discord.Status.idle)
+    await client.change_presence(activity=discord.Game('With Myself'), status=discord.Status.idle)
 
 
 @client.command(hidden=True)

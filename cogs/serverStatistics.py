@@ -3,7 +3,7 @@ from discord.ext import commands
 from pymongo import MongoClient
 
 # Getting the NorthBot mongoDB connection URL
-file = open("mongoURL.txt")
+file = open('mongoURL.txt')
 connectionURL = file.read()
 file.close()
 
@@ -45,11 +45,11 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
         print(f'Joined {serverName}!')
 
         dataBase = cluster[serverID]
-        collection = dataBase["serverInfo"]
+        collection = dataBase['serverInfo']
 
         # Creates default information for a server on join
-        post = {"_id": server.id, "serverName": server.name, "numMembers": numMembers,
-                "messageRestrictions": False, "reputation": False, "announceStreams": False}
+        post = {'_id': server.id, 'serverName': server.name, 'numMembers': numMembers, 'streamChannel': '', 'modChat': '',
+                'messageRestrictions': False, 'reputation': False, 'announceStreams': False}
         collection.insert_one(post)
 
     # Deletes the data base for the server?!?
@@ -68,18 +68,18 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
     async def on_member_join(self, member):
         serverID = member.guild.id
         dataBase = cluster[serverID]
-        collection = dataBase["serverInfo"]
+        collection = dataBase['serverInfo']
 
-        collection.update_one({"_id": serverID}, {"$inc": {"numMembers": 1}})
+        collection.update_one({'_id': serverID}, {'$inc': {'numMembers': 1}})
 
     # Subtract one on member leave
     @commands.Cog.listener()
     async def on_member_leave(self, member):
         serverID = member.guild.id
         dataBase = cluster[serverID]
-        collection = dataBase["serverInfo"]
+        collection = dataBase['serverInfo']
 
-        collection.update_one({"_id": serverID}, {"$inc": {"numMembers": -1}})
+        collection.update_one({'_id': serverID}, {'$inc': {'numMembers': -1}})
 
     # Keeps track of all the messages sent in servers and adds them to a mongoDB
     # DOES NOT TRACK USER MESSAGES THAT THEY SEND
@@ -89,16 +89,16 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
             return
 
         dataBase = cluster[str(ctx.guild.id)]
-        channelData = dataBase["channelData"]
+        channelData = dataBase['channelData']
 
-        print(f"{ctx.channel}: {ctx.author}: {ctx.author.name}: {ctx.content}")
+        print(f'{ctx.channel}: {ctx.author}: {ctx.author.name}: {ctx.content}')
 
-        myquery = {"_id": ctx.channel.id}
+        myquery = {'_id': ctx.channel.id}
         if channelData.count_documents(myquery) == 0:
-            post = {"_id": ctx.channel.id, "cName": ctx.channel.name, "numMessages": 1}
+            post = {'_id': ctx.channel.id, 'cName': ctx.channel.name, 'numMessages': 1}
             channelData.insert_one(post)
         else:
-            channelData.update_one({"_id": ctx.channel.id}, {"$inc": {"numMessages": 1}})
+            channelData.update_one({'_id': ctx.channel.id}, {'$inc': {'numMessages': 1}})
 
     """###################################################
     #                     Commands                       #
@@ -117,19 +117,19 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
         members = ctx.guild.members  # This probably doesn't work
         numMembers = 0
         dataBase = cluster[str(serverID)]
-        collection = dataBase["serverInfo"]
-        query = {"_id": serverID}
+        collection = dataBase['serverInfo']
+        query = {'_id': serverID}
 
         for member in members:
             numMembers += 1
 
         # If the server document is not found in the collection then we insert a new one
         if collection.count_documents(query) == 0:
-            post = {"_id": serverID, "serverName": serverName, "numMembers": numMembers,
-                    "messageRestrictions": False, "reputation": False, "announceStreams": False}
+            post = {'_id': serverID, 'serverName': serverName, 'numMembers': numMembers, 'streamChannel': '', 'modChat': '',
+                    'messageRestrictions': False, 'reputation': False, 'announceStreams': False}
             collection.insert_one(post)
 
-            await ctx.channel.send("Server info refreshed")
+            await ctx.channel.send('Server info refreshed')
         else:
             return
 
