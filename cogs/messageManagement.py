@@ -134,10 +134,12 @@ class messageManagement(commands.Cog, name='Message Management'):
         dataBase = cluster[str(serverID)]
         serverInfo = dataBase['serverInfo']
 
-        if onOff:
+        if onOff.lower() == 'on':
             serverInfo.update_one({'_id': serverID}, {'$set': {'messageRestrictions': True}})
-        else:
+        elif onOff.lower() == 'off':
             serverInfo.update_one({'_id': serverID}, {'$set': {'messageRestrictions': False}})
+        else:
+            await ctx.channel.send('Input not understood! Please use on or off.')
 
     # Ping command to see if the file is loaded
     @commands.command(hidden=True)

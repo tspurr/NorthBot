@@ -25,6 +25,7 @@ DEALINGS IN THE SOFTWARE.
 import discord
 from discord.ext import commands
 from pymongo import MongoClient
+import random
 
 # Getting the NorthBot mongoDB connection URL
 file = open('mongoURL.txt')
@@ -33,6 +34,13 @@ file.close()
 
 # MongoDB initialization
 cluster = MongoClient(connectionURL)
+
+
+# If someone uses a good word in their message
+def extra(content):
+    goodWords = {'thanks', 'thank', 'phara-nough', 'ana-ostly', 'welcome', ''}
+
+    return any(word in content for word in goodWords)
 
 
 class reputation(commands.Cog, name='Reputation'):
@@ -59,7 +67,7 @@ class reputation(commands.Cog, name='Reputation'):
 
         # Creates a default user for a member in the data base
         badMessages = dict()
-        newUser = {'_id': member.id, 'name': member.name, 'badMessages': badMessages, 'warnings': 0, 'numMessages': 0}
+        newUser = {'_id': member.id, 'name': member.name, 'badMessages': badMessages, 'warnings': 0, 'numMessages': 0, 'reputation': 0}
         userData.insert_one(newUser)
 
     # Sends the leaving member a message about leaving the server
@@ -83,12 +91,12 @@ class reputation(commands.Cog, name='Reputation'):
         serverID = server.id
 
         dataBase = cluster[serverID]
-        userData = dataBase['userInfo']
+        userData = dataBase['userData']
 
         # Going through all the members in a server when the bot is added
         for member in server.members:
             badMessages = dict()
-            newUser = {'_id': member.id, 'name': member.name, 'badMessages': badMessages, 'warnings': 0, 'numMessages': 0}
+            newUser = {'_id': member.id, 'name': member.name, 'badMessages': badMessages, 'warnings': 0, 'numMessages': 0, 'reputation': 0}
             userData.insert_one(newUser)
 
 
@@ -99,12 +107,17 @@ class reputation(commands.Cog, name='Reputation'):
             return
 
         serverID = ctx.guild.id
-
         dataBase = cluster[str(serverID)]
         userData = dataBase['userData']
+        messageContent = ctx.content.split(' ')
 
         # Update the number of messages by one when the user talks
         userData.update_one({'_id': ctx.author.id}, {'$inc': {'numMessages': 1}})
+        userData.update_one({'_id': ctx.author.id}, {'$inc': {'reputation': 1}})
+
+        # If someone says something good/extra they'll get extra reputation
+        if extra(messageContent):
+            userData.update_one({'_id': ctx.author.id}, {'$inc': {'reputation': random.randint(0, 20)}})
 
 
 
@@ -112,32 +125,88 @@ class reputation(commands.Cog, name='Reputation'):
     #                     Commands                       #
     ###################################################"""
 
-    # TODO Rep on/off
+    # Rep on/off
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def repOnOff(self, ctx, onOff):
+        dataBase = cluster[str(ctx.guild.id)]
+        serverInfo = dataBase['serverInfo']
 
-    # TODO Gambling
+        if onOff.lower() == 'on':
+            serverInfo.update_one({'_id': ctx.guild.id}, {'$set': {'reputation': True}})
+        elif onOff.lower == 'off':
+            serverInfo.update_one({'_id': ctx.guild.id}, {'$set': {'reputation': False}})
+        else:
+            await ctx.channel.send('Invalid use of command, use .help if you need to know more')
 
-    # TODO Rep remove
+    # Gambling points
+    @commands.command()
+    async def gamble(self, ctx, amount):
+        randomNum = random.randint(0, amount)
+        addSub = random.randint(1, 2)
+        dataBase = cluster[str(ctx.guild.id)]
+        userID = ctx.author.id
+        userData = dataBase['userData']
 
-    # TODO Rep give
+        # Add the number
+        if addSub == 1:
+            userData.find_one({'_id': userID}, {'$inc': {reputation: randomNum}})
+            await ctx.channel.send(f'{ctx.author} has gotten {randomNum} added!')
 
-    # TODO Extra points
+        # Subtract the number
+        elif addSub == 2:
+            userData.find_one({'_id': userID}, {'$inc': {reputation: -randomNum}})
+            await ctx.channel.send(f'{ctx.author} has gotten {randomNum} subtracted!')
 
-    # Refreshes the user list incase the data was deleted in the database
+        else:
+            await ctx.channel.send('Oops something went wrong, please submit an error report')
+
+    # Rep remove
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def repRemove(self, ctx, member, amount):
+        dataBase = cluster[str(ctx.guild.id)]
+        userData = dataBase['userData']
+        memberData = userData.find_one({'_id': member.id})
+
+        if memberData['reputation'] == 0:
+            await ctx.channel.send(f'{member} has no reputation to remove :(')
+        elif amount > memberData['reputation']:
+            userData.update_one({'_id': member.id}, {'$set': {'reputation': 0}})
+        else:
+            userData.update_one({'_id': member.id}, {'$inc': {'reputation': -amount}})
+
+    # Rep give
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def repGive(self, ctx, member, amount):
+        dataBase = cluster[str(ctx.guild.id)]
+        userData = dataBase['userData']
+
+        userData.update_one({'_id': member.id}, {'$inc': {'reputation': amount}})
+
+    # Refreshes the user list in case the data was deleted in the database
     @commands.command(hidden=True)
     @commands.has_permissions(administrator=True)
     async def refreshUsers(self, ctx):
         serverID = ctx.guild.id
         members = ctx.guild.members
 
-        dataBase = cluster[serverID]
-        userData = dataBase['userInfo']
+        dataBase = cluster[str(serverID)]
+        userData = dataBase['userData']
 
         # Going through all the members in a server when the bot is added
         for member in members:
+            # If the member is a bot ignore the member
+            if member.bot:
+                continue
+
             badMessages = dict()
             newUser = {'_id': member.id, 'name': member.name, 'badMessages': badMessages, 'warnings': 0,
-                       'numMessages': 0}
+                       'numMessages': 0, 'reputation': 0}
             userData.insert_one(newUser)
+
+        await ctx.channel.send('User refresh done!')
 
     @commands.command(hidden=True)
     async def ping6(self, ctx):
