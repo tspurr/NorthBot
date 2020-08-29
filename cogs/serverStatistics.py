@@ -1,3 +1,27 @@
+"""
+The MIT License (MIT)
+
+Copyright (c) 2020 Tyler Spurr
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+"""
+
 import discord
 from discord.ext import commands
 from pymongo import MongoClient
@@ -109,8 +133,37 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
     # TODO Gets the least talked in channel
 
     # TODO Gets general server statistics (responds in embed)
+    @commands.command()
+    async def serverStats(self, ctx):
+        serverID = ctx.guild.id
+        serverName = ctx.guild.id
+
+        dataBase = cluster[str(serverID)]
+        channelData = dataBase['channelData']
+        userData = dataBase['userData']
+
+    @commands.command()
+    @commands.has_permissions(ban_members=True)
+    async def ban(self, ctx, member: discord.Member, *, reason=None):
+        serverID = ctx.guild.id
+        serverName = ctx.guild.name
+
+        await member.create_dm()
+        await member.dm_channel.send(f'You have been banned from {serverName} for reason: {reason}')
+        await member.ban(reason=reason)
+
+    @commands.command()
+    @commands.has_permissions(kick_members=True)
+    async def kick(self, ctx, member: discord.Member, *, reason=None):
+        serverID = ctx.guild.id
+        serverName = ctx.guild.name
+
+        await member.create_dm()
+        await member.dm_channel.send(f'You have been kicked from {serverName} for reason: {reason}')
+        await member.kick(reason=reason)
 
     @commands.command(hidden=True)
+    @commands.has_permissions(administrator=True)
     async def serverRefresh(self, ctx):
         serverID = ctx.guild.id
         serverName = ctx.guild.name
