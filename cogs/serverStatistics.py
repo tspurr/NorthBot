@@ -69,12 +69,19 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
         print(f'Joined {serverName}!')
 
         dataBase = cluster[serverID]
-        collection = dataBase['serverInfo']
+        serverInfo = dataBase['serverInfo']
+        channelData = dataBase['channelData']
 
         # Creates default information for a server on join
         post = {'_id': server.id, 'serverName': server.name, 'numMembers': numMembers, 'streamChannel': '', 'modChat': '',
                 'messageRestrictions': False, 'reputation': False, 'announceStreams': False}
-        collection.insert_one(post)
+        serverInfo.insert_one(post)
+
+        # Goes through and checks/adds the channelData documents for every channel
+        for channel in server.channels:
+            if channelData.count_documents({'_id': channel.id}) == 0:
+                post = {'_id': channel.id, 'cName': channel.name, 'numMessages': 0}
+                channelData.update_one(post)
 
     # Deletes the data base for the server?!?
     @commands.Cog.listener()
@@ -168,23 +175,31 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
         serverID = ctx.guild.id
         serverName = ctx.guild.name
         members = ctx.guild.members  # This probably doesn't work
+        channels = ctx.guild.channels
         numMembers = 0
         dataBase = cluster[str(serverID)]
-        collection = dataBase['serverInfo']
+        serverInfo = dataBase['serverInfo']
+        channelData = dataBase['channelData']
         query = {'_id': serverID}
 
         for member in members:
             numMembers += 1
 
         # If the server document is not found in the collection then we insert a new one
-        if collection.count_documents(query) == 0:
+        if serverInfo.count_documents(query) == 0:
             post = {'_id': serverID, 'serverName': serverName, 'numMembers': numMembers, 'streamChannel': '', 'modChat': '',
                     'messageRestrictions': False, 'reputation': False, 'announceStreams': False}
-            collection.insert_one(post)
+            serverInfo.insert_one(post)
 
             await ctx.channel.send('Server info refreshed')
         else:
             return
+
+        # Gets all the channel data put back in if some was deleted
+        for channel in channels:
+            if channelData.count_documents({'_id': channel.id}) == 0:
+                post = {'_id': ctx.channel.id, 'cName': ctx.channel.name, 'numMessages': 0}
+                channelData.update_one(post)
 
     # Ping command to see the latency of the bot
     @commands.command()
