@@ -90,7 +90,7 @@ class help(commands.Cog, name='Help'):
 
         # Creating a DM with the author
         await author.create_dm()
-        directMessage = await author.dm_channel.send(embed=pages[pageNumber])
+        directMessage = await author.dm_channel.send(embed=pages)
 
         # Adding navigation arrows to message
         await directMessage.add_reaction('⬅')  # Arrow Left
@@ -126,6 +126,9 @@ class help(commands.Cog, name='Help'):
                 pageNumber = 0
                 await directMessage.edit(embed=pages[pageNumber])
                 await directMessage.remove_reaction('➡', author)
+
+            # Waiting for the user to react
+            userReaction, user = await self.client.wait_for('reaction_add', timeout=120.0)
 
         # Delete the help menu in the DM
         await author.dm_channel.purge(limit=1)

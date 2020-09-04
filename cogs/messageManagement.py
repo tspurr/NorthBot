@@ -125,7 +125,6 @@ class messageManagement(commands.Cog, name='Message Management'):
             await ctx.channel.send(f'Sorry {ctx.message.author} you do not have permissions!')
 
     # Turning on/off message restrictions
-    # TODO Make this command administrator only
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def profanityFilter(self, ctx, onOff):
@@ -136,8 +135,12 @@ class messageManagement(commands.Cog, name='Message Management'):
 
         if onOff.lower() == 'on':
             serverInfo.update_one({'_id': serverID}, {'$set': {'messageRestrictions': True}})
+            await ctx.channel.send('Profanity Filter Turned **On**!')
+
         elif onOff.lower() == 'off':
             serverInfo.update_one({'_id': serverID}, {'$set': {'messageRestrictions': False}})
+            await ctx.channel.send('Profanity Filter Turned **Off**!')
+
         else:
             await ctx.channel.send('Input not understood! Please use on or off.')
 

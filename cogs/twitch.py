@@ -74,7 +74,7 @@ class twitch(commands.Cog, name='Twitch/YouTube'):
             # Grabs the server info document all in one step instead of spreading it out
             serverInfo = dataBase['serverInfo'].find_one({'_id': serverID})
 
-            # If the server has announcements turned on6
+            # If the server has announcements turned on
             if serverInfo['announceStreams']:
 
                 # Loop through all the members in a server
@@ -135,8 +135,34 @@ class twitch(commands.Cog, name='Twitch/YouTube'):
         embed.add_field(name='Field Name', value='Description', inline=False)
         embed.add_field(name='Field Name', value='Description', inline=True)
         embed.add_field(name='Field Name', value='Description', inline=True)
+        embed.add_field(name='Field Name', value='Description', inline=True)
+        embed.add_field(name='Field Name', value='Description', inline=True)
+        embed.add_field(name='Field Name', value='Description', inline=True)
+        embed.add_field(name='Field Name', value='Description', inline=True)
 
         await ctx.send(embed=embed)
+
+    # Rep on/off
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def streamAnnounceOnOff(self, ctx, onOff):
+        dataBase = cluster[str(ctx.guild.id)]
+        serverInfo = dataBase['serverInfo']
+
+        if onOff.lower() == 'on':
+            serverInfo.update_one({'_id': ctx.guild.id}, {'$set': {'announceStreams': True}})
+            await ctx.channel.send('Stream Announcements Turned **On**!')
+
+            # If there is no channel set remind them to set one
+            if serverInfo['streamChannel'] == int():
+                await ctx.channel.send('Make sure to assign a channel to announce streams!\n.setStreamChannel [ID]')
+
+        elif onOff.lower == 'off':
+            serverInfo.update_one({'_id': ctx.guild.id}, {'$set': {'announceStreams': False}})
+            await ctx.channel.send('Stream Announcements Turned **Off**!')
+
+        else:
+            await ctx.channel.send('Invalid use of command, use .help if you need to know more')
 
     # Updates the channel that streams are to be announced in
     @commands.command()

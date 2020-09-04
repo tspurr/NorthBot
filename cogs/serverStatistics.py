@@ -54,17 +54,10 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
 
     # Creates the dataBase for when the bot joins a discord server
     @commands.Cog.listener()
-    async def on_server_join(self, server):
+    async def on_guild_join(self, guild):
 
-        serverID = server.id
-        serverName = server.Name
-        numMembers = 0
-
-        # Counting the number of members in a server
-        # Might be a server.member.size or something
-        # TODO look into if members is a list then you can use len(server.members)
-        for members in server.members:
-            numMembers += 1
+        serverID = guild.id
+        serverName = guild.Name
 
         print(f'Joined {serverName}!')
 
@@ -73,26 +66,39 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
         channelData = dataBase['channelData']
 
         # Creates default information for a server on join
-        post = {'_id': server.id, 'serverName': server.name, 'numMembers': numMembers, 'streamChannel': '', 'modChat': '',
+        post = {'_id': serverID, 'serverName': serverName, 'numMembers': len(guild.members), 'streamChannel': '', 'modChat': '',
                 'messageRestrictions': False, 'reputation': False, 'announceStreams': False}
         serverInfo.insert_one(post)
 
         # Goes through and checks/adds the channelData documents for every channel
-        for channel in server.channels:
+        for channel in guild.channels:
             if channelData.count_documents({'_id': channel.id}) == 0:
                 post = {'_id': channel.id, 'cName': channel.name, 'numMessages': 0}
-                channelData.update_one(post)
+                channelData.insert_one(post)
 
     # Deletes the data base for the server?!?
     @commands.Cog.listener()
-    async def on_server_leave(self, server):
-        serverID = server.id
-        serverName = server.Name
+    async def on_guild_leave(self, guild):
+        serverID = guild.id
+        serverName = guild.Name
 
         print(f'Left {serverName}!')
 
         # This should delete the server data
         cluster.drop_database(serverID)
+
+    # If a server updates any relevant information
+    @commands.Cog.listener()
+    async def on_guild_update(self, guild):
+        serverID = guild.id
+        serverName = guild.Name
+
+        dataBase = cluster[str(serverID)]
+        serverInfo = dataBase['serverInfo']
+        serverData = serverInfo.find_one({'_id': serverID})
+
+        if serverName != serverData['serverName']:
+            serverInfo.update_one({'_id': serverID}, {'$set': {'serverName': serverName}})
 
     # Add one to numMembers on server
     @commands.Cog.listener()
@@ -124,12 +130,44 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
 
         print(f'{ctx.channel}: {ctx.author}: {ctx.author.name}: {ctx.content}')
 
-        myquery = {'_id': ctx.channel.id}
-        if channelData.count_documents(myquery) == 0:
-            post = {'_id': ctx.channel.id, 'cName': ctx.channel.name, 'numMessages': 1}
-            channelData.insert_one(post)
-        else:
-            channelData.update_one({'_id': ctx.channel.id}, {'$inc': {'numMessages': 1}})
+        channelData.update_one({'_id': ctx.channel.id}, {'$inc': {'numMessages': 1}})
+
+    # When a channel is created in the server
+    @commands.Cog.listener()
+    async def on_guild_channel_create(self, channel):
+        channelID = channel.id
+        channelName = channel.name
+
+        dataBase = cluster[str(channelID)]
+        channelData = dataBase['channelData']
+
+        channelData.insert_one({'_id': channelID, 'cName': channelName, 'numMessages': 0})
+
+    # When a channel is deleted from the server
+    @commands.Cog.listener()
+    async def on_guild_channel_remove(self, channel):
+        channelID = channel.id
+        channelName = channel.name
+
+        dataBase = cluster[str(channelID)]
+        channelData = dataBase['channelData']
+
+        channelData.delete_one({'_id': channelID, 'cName': channelName, 'numMessages': 0})
+
+    # If there was any relevant information changed on the channel
+    @commands.Cog.listener()
+    async def on_guild_channel_update(self, channel):
+        channelID = channel.id
+        channelName = channel.name
+
+        dataBase = cluster[str(channelID)]
+        channelData = dataBase['channelData']
+
+        update = channelData.find_one({'_id': channelID})
+
+        # If the channel name was changed
+        if update['cName'] != channelName:
+            channelData.update_one({'_id': channelID}, {'$set': {'cName': channelName}})
 
     """###################################################
     #                     Commands                       #
@@ -176,18 +214,14 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
         serverName = ctx.guild.name
         members = ctx.guild.members  # This probably doesn't work
         channels = ctx.guild.channels
-        numMembers = 0
         dataBase = cluster[str(serverID)]
         serverInfo = dataBase['serverInfo']
         channelData = dataBase['channelData']
         query = {'_id': serverID}
 
-        for member in members:
-            numMembers += 1
-
         # If the server document is not found in the collection then we insert a new one
         if serverInfo.count_documents(query) == 0:
-            post = {'_id': serverID, 'serverName': serverName, 'numMembers': numMembers, 'streamChannel': '', 'modChat': '',
+            post = {'_id': serverID, 'serverName': serverName, 'numMembers': len(members), 'streamChannel': int(), 'modChat': int(),
                     'messageRestrictions': False, 'reputation': False, 'announceStreams': False}
             serverInfo.insert_one(post)
 
@@ -199,7 +233,7 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
         for channel in channels:
             if channelData.count_documents({'_id': channel.id}) == 0:
                 post = {'_id': ctx.channel.id, 'cName': ctx.channel.name, 'numMessages': 0}
-                channelData.update_one(post)
+                channelData.insert_one(post)
 
     # Ping command to see the latency of the bot
     @commands.command()

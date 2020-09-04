@@ -62,7 +62,9 @@ class reputation(commands.Cog, name='Reputation'):
         await member.create_dm()
         await member.dm_channel.send(f'HI {member.name} welcome to {member.guild.name}!\nMake sure to go check out rules and roles!\nLastly make sure to have fun!')
 
-        dataBase = cluster[member.guild.id]
+        serverID = member.guild.id
+
+        dataBase = cluster[str(serverID)]
         userData = dataBase['userData']
 
         # Creates a default user for a member in the data base
@@ -76,7 +78,9 @@ class reputation(commands.Cog, name='Reputation'):
         await member.create_dm()
         await member.dm_channel.send(f'Sorry to see you leave {member.guild.name}!')
 
-        dataBase = cluster[member.guild.id]
+        serverID = member.guild.id
+
+        dataBase = cluster[str(serverID)]
         userData = dataBase['userData']
 
         # Find the user and delete all the information about them (may not keep this)
@@ -84,6 +88,22 @@ class reputation(commands.Cog, name='Reputation'):
         query = {'_id': member.id}
         if userData.count_documents(query) == 1:
             userData.delete_one(query)
+
+    # If a member updates any relevant information\
+    @commands.Cog.listener()
+    async def on_member_update(self, member):
+        serverID = member.guild.id
+        memberID = member.id
+        memberName = member.name
+
+        dataBase = cluster[str(serverID)]
+        userData = dataBase['userData']
+
+        update = userData.find_one({'_id': memberID})
+
+        # If the names are different update the one in the database
+        if update['name'] != memberName:
+            userData.update_one({'_id': memberID}, {'$set': {'name': memberName}})
 
     # Go through and create files for every member on a server to insert into the data base
     @commands.Cog.listener()
@@ -134,8 +154,12 @@ class reputation(commands.Cog, name='Reputation'):
 
         if onOff.lower() == 'on':
             serverInfo.update_one({'_id': ctx.guild.id}, {'$set': {'reputation': True}})
+            await ctx.channel.send('Reputation Turned **On**!')
+
         elif onOff.lower == 'off':
             serverInfo.update_one({'_id': ctx.guild.id}, {'$set': {'reputation': False}})
+            await ctx.channel.send('Reputation Turned **Off**!')
+
         else:
             await ctx.channel.send('Invalid use of command, use .help if you need to know more')
 
