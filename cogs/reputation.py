@@ -56,7 +56,7 @@ class reputation(commands.Cog, name='Reputation'):
     async def on_ready(self):
         print(f'\t- Loaded Reputation')
 
-    # Sends the new member a message about joining the server
+    # Sends the new member a message about joining the guild
     @commands.Cog.listener()
     async def on_member_join(self, member):
         await member.create_dm()
@@ -65,14 +65,14 @@ class reputation(commands.Cog, name='Reputation'):
         guildID = member.guild.id
 
         dataBase = cluster[str(guildID)]
-        userData = dataBase['userData']
+        memberData = dataBase['memberData']
 
-        # Creates a default user for a member in the data base
+        # Creates a default member for a member in the data base
         badMessages = dict()
         newUser = {'_id': member.id, 'name': member.name, 'badMessages': badMessages, 'warnings': 0, 'numMessages': 0, 'reputation': 0}
-        userData.insert_one(newUser)
+        memberData.insert_one(newUser)
 
-    # Sends the leaving member a message about leaving the server
+    # Sends the leaving member a message about leaving the guild
     @commands.Cog.listener()
     async def on_member_leave(self, member):
         await member.create_dm()
@@ -81,13 +81,13 @@ class reputation(commands.Cog, name='Reputation'):
         guildID = member.guild.id
 
         dataBase = cluster[str(guildID)]
-        userData = dataBase['userData']
+        memberData = dataBase['memberData']
 
-        # Find the user and delete all the information about them (may not keep this)
-        # userData.find_one_and_delete({"_id": member.id})
+        # Find the member and delete all the information about them (may not keep this)
+        # memberData.find_one_and_delete({"_id": member.id})
         query = {'_id': member.id}
-        if userData.count_documents(query) == 1:
-            userData.delete_one(query)
+        if memberData.count_documents(query) == 1:
+            memberData.delete_one(query)
 
     # If a member updates any relevant information\
     @commands.Cog.listener()
@@ -97,47 +97,47 @@ class reputation(commands.Cog, name='Reputation'):
         memberName = member.name
 
         dataBase = cluster[str(guildID)]
-        userData = dataBase['userData']
+        memberData = dataBase['memberData']
 
-        update = userData.find_one({'_id': memberID})
+        update = memberData.find_one({'_id': memberID})
 
         # If the names are different update the one in the database
         if update['name'] != memberName:
-            userData.update_one({'_id': memberID}, {'$set': {'name': memberName}})
+            memberData.update_one({'_id': memberID}, {'$set': {'name': memberName}})
 
-    # Go through and create files for every member on a server to insert into the data base
+    # Go through and create files for every member on a guild to insert into the data base
     @commands.Cog.listener()
-    async def on_server_join(self, server):
-        guildID = server.id
+    async def on_guild_join(self, guild):
+        guildID = guild.id
 
         dataBase = cluster[guildID]
-        userData = dataBase['userData']
+        memberData = dataBase['memberData']
 
-        # Going through all the members in a server when the bot is added
-        for member in server.members:
+        # Going through all the members in a guild when the bot is added
+        for member in guild.members:
             badMessages = dict()
             newUser = {'_id': member.id, 'name': member.name, 'badMessages': badMessages, 'warnings': 0, 'numMessages': 0, 'reputation': 0}
-            userData.insert_one(newUser)
+            memberData.insert_one(newUser)
 
 
     @commands.Cog.listener()
     async def on_message(self, ctx):
-        # Don't count bot messages in server statistics
+        # Don't count bot messages in guild statistics
         if ctx.author.bot:
             return
 
         guildID = ctx.guild.id
         dataBase = cluster[str(guildID)]
-        userData = dataBase['userData']
+        memberData = dataBase['memberData']
         messageContent = ctx.content.split(' ')
 
-        # Update the number of messages by one when the user talks
-        userData.update_one({'_id': ctx.author.id}, {'$inc': {'numMessages': 1}})
-        userData.update_one({'_id': ctx.author.id}, {'$inc': {'reputation': 1}})
+        # Update the number of messages by one when the member talks
+        memberData.update_one({'_id': ctx.author.id}, {'$inc': {'numMessages': 1}})
+        memberData.update_one({'_id': ctx.author.id}, {'$inc': {'reputation': 1}})
 
         # If someone says something good/extra they'll get extra reputation
         if extra(messageContent):
-            userData.update_one({'_id': ctx.author.id}, {'$inc': {'reputation': random.randint(0, 20)}})
+            memberData.update_one({'_id': ctx.author.id}, {'$inc': {'reputation': random.randint(0, 20)}})
 
 
 
@@ -150,14 +150,14 @@ class reputation(commands.Cog, name='Reputation'):
     @commands.has_permissions(administrator=True)
     async def repOnOff(self, ctx, onOff):
         dataBase = cluster[str(ctx.guild.id)]
-        serverInfo = dataBase['serverInfo']
+        guildInfo = dataBase['guildInfo']
 
         if onOff.lower() == 'on':
-            serverInfo.update_one({'_id': ctx.guild.id}, {'$set': {'reputation': True}})
+            guildInfo.update_one({'_id': ctx.guild.id}, {'$set': {'reputation': True}})
             await ctx.channel.send('Reputation Turned **On**!')
 
         elif onOff.lower == 'off':
-            serverInfo.update_one({'_id': ctx.guild.id}, {'$set': {'reputation': False}})
+            guildInfo.update_one({'_id': ctx.guild.id}, {'$set': {'reputation': False}})
             await ctx.channel.send('Reputation Turned **Off**!')
 
         else:
@@ -166,20 +166,29 @@ class reputation(commands.Cog, name='Reputation'):
     # Gambling points
     @commands.command()
     async def gamble(self, ctx, amount):
-        randomNum = random.randint(0, amount)
         addSub = random.randint(1, 2)
         dataBase = cluster[str(ctx.guild.id)]
-        userID = ctx.author.id
-        userData = dataBase['userData']
+        memberID = ctx.author.id
+        memberData = dataBase['memberData']
+
+        member = memberData.find_one({'_id': memberID})
+        rep = member['reputation']
+
+        # If the member does not have the amount that they want to gamble away return
+        if rep < amount:
+            await ctx.channel.send(f'You cannot gamble {amount} points, you only have {rep}!\nTry again!')
+            return
+
+        randomNum = random.randint(0, amount)
 
         # Add the number
         if addSub == 1:
-            userData.find_one({'_id': userID}, {'$inc': {reputation: randomNum}})
+            memberData.update_one({'_id': memberID}, {'$inc': {reputation: randomNum}})
             await ctx.channel.send(f'{ctx.author} has gotten {randomNum} added!')
 
         # Subtract the number
         elif addSub == 2:
-            userData.find_one({'_id': userID}, {'$inc': {reputation: -randomNum}})
+            memberData.update_one({'_id': memberID}, {'$inc': {reputation: -randomNum}})
             await ctx.channel.send(f'{ctx.author} has gotten {randomNum} subtracted!')
 
         else:
@@ -190,26 +199,26 @@ class reputation(commands.Cog, name='Reputation'):
     @commands.has_permissions(administrator=True)
     async def repRemove(self, ctx, member, amount):
         dataBase = cluster[str(ctx.guild.id)]
-        userData = dataBase['userData']
-        memberData = userData.find_one({'_id': member.id})
+        memberData = dataBase['memberData']
+        memberData = memberData.find_one({'_id': member.id})
 
         if memberData['reputation'] == 0:
             await ctx.channel.send(f'{member} has no reputation to remove :(')
         elif amount > memberData['reputation']:
-            userData.update_one({'_id': member.id}, {'$set': {'reputation': 0}})
+            memberData.update_one({'_id': member.id}, {'$set': {'reputation': 0}})
         else:
-            userData.update_one({'_id': member.id}, {'$inc': {'reputation': -amount}})
+            memberData.update_one({'_id': member.id}, {'$inc': {'reputation': -amount}})
 
     # Rep give
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def repGive(self, ctx, member, amount):
         dataBase = cluster[str(ctx.guild.id)]
-        userData = dataBase['userData']
+        memberData = dataBase['memberData']
 
-        userData.update_one({'_id': member.id}, {'$inc': {'reputation': amount}})
+        memberData.update_one({'_id': member.id}, {'$inc': {'reputation': amount}})
 
-    # Refreshes the user list in case the data was deleted in the database
+    # Refreshes the member list in case the data was deleted in the database
     @commands.command(hidden=True)
     @commands.has_permissions(administrator=True)
     async def refreshUsers(self, ctx):
@@ -217,9 +226,9 @@ class reputation(commands.Cog, name='Reputation'):
         members = ctx.guild.members
 
         dataBase = cluster[str(guildID)]
-        userData = dataBase['userData']
+        memberData = dataBase['memberData']
 
-        # Going through all the members in a server when the bot is added
+        # Going through all the members in a guild when the bot is added
         for member in members:
             # If the member is a bot ignore the member
             if member.bot:
@@ -228,7 +237,7 @@ class reputation(commands.Cog, name='Reputation'):
             badMessages = dict()
             newUser = {'_id': member.id, 'name': member.name, 'badMessages': badMessages, 'warnings': 0,
                        'numMessages': 0, 'reputation': 0}
-            userData.insert_one(newUser)
+            memberData.insert_one(newUser)
 
         await ctx.channel.send('User refresh done!')
 

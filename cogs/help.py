@@ -70,9 +70,9 @@ class help(commands.Cog, name='Help'):
             color=discord.Color.green()
         )
 
-        # Help menu page for serverStatistics
+        # Help menu page for guildStatistics
         embedSS = discord.Embed(
-            title='Help Server Statistics',
+            title='Help Guild Statistics',
             color=discord.Color.blue()
         )
 
@@ -97,38 +97,38 @@ class help(commands.Cog, name='Help'):
         await directMessage.add_reaction('➡')  # Arrow Right
         await directMessage.add_reaction('🗑️')  # Waste Basket
 
-        # Waiting for the user to react
-        userReaction, user = await self.client.wait_for('reaction_add', timeout=120.0)
+        # Waiting for the member to react
+        memberReaction, member = await self.client.wait_for('reaction_add', timeout=120.0)
 
-        # while the user is looking through the reaction menu
-        while userReaction != '🗑️':
+        # while the member is looking through the reaction menu
+        while memberReaction != '🗑️':
 
             # Going back a page if we are not on the first page
-            if userReaction == '⬅' and pageNumber != 0:
+            if memberReaction == '⬅' and pageNumber != 0:
                 pageNumber += -1
                 await directMessage.edit(embed=pages[pageNumber])
                 await directMessage.remove_reaction('⬅', author)
 
             # Going back a page if we are at the first page
-            elif userReaction == '⬅' and pageNumber == 0:
+            elif memberReaction == '⬅' and pageNumber == 0:
                 pageNumber = len(pages) - 1
                 await directMessage.edit(embed=pages[pageNumber])
                 await directMessage.remove_reaction('⬅', author)
 
             # Going forward a page if we are not at the last page
-            elif userReaction == '➡' and pageNumber != len(pages) - 1:
+            elif memberReaction == '➡' and pageNumber != len(pages) - 1:
                 pageNumber += 1
                 await directMessage.edit(embed=pages[pageNumber])
                 await directMessage.remove_reaction('➡', author)
 
             # Going forward a page if we are at the last page
-            elif userReaction == '➡' and pageNumber == len(pages) - 1:
+            elif memberReaction == '➡' and pageNumber == len(pages) - 1:
                 pageNumber = 0
                 await directMessage.edit(embed=pages[pageNumber])
                 await directMessage.remove_reaction('➡', author)
 
-            # Waiting for the user to react
-            userReaction, user = await self.client.wait_for('reaction_add', timeout=120.0)
+            # Waiting for the member to react
+            memberReaction, member = await self.client.wait_for('reaction_add', timeout=120.0)
 
         # Delete the help menu in the DM
         await author.dm_channel.purge(limit=1)

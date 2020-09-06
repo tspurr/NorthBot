@@ -77,19 +77,19 @@ class messageManagement(commands.Cog, name='Message Management'):
         messageContent = ctx.content.split(' ')
 
         dataBase = cluster[str(guildID)]
-        serverInfo = dataBase['serverInfo']
-        userData = dataBase['userData']
+        guildInfo = dataBase['guildInfo']
+        memberData = dataBase['memberData']
 
-        # Find if the server has message restrictions on and if they do check the message for bad words and give a warning
-        query = serverInfo.find_one({'_id': guildID})
+        # Find if the guild has message restrictions on and if they do check the message for bad words and give a warning
+        query = guildInfo.find_one({'_id': guildID})
         if query['messageRestrictions']:
 
             if badWord(messageContent):
 
-                # increments the warnings and number of messages the user sent by one
-                userData.update_one({'_id': int(ctx.author.id)}, {'$inc': {'warnings': 1}})
+                # increments the warnings and number of messages the member sent by one
+                memberData.update_one({'_id': int(ctx.author.id)}, {'$inc': {'warnings': 1}})
                 # updates the badMessages dictionary in the database
-                userData.update_one({'_id': int(ctx.author.id)}, {'$set': {f'badMessages.{str(ctx.id)}': ctx.content}})
+                memberData.update_one({'_id': int(ctx.author.id)}, {'$set': {f'badMessages.{str(ctx.id)}': ctx.content}})
 
                 await ctx.channel.purge(limit=1)
 
@@ -131,14 +131,14 @@ class messageManagement(commands.Cog, name='Message Management'):
         guildID = ctx.guild.id
 
         dataBase = cluster[str(guildID)]
-        serverInfo = dataBase['serverInfo']
+        guildInfo = dataBase['guildInfo']
 
         if onOff.lower() == 'on':
-            serverInfo.update_one({'_id': guildID}, {'$set': {'messageRestrictions': True}})
+            guildInfo.update_one({'_id': guildID}, {'$set': {'messageRestrictions': True}})
             await ctx.channel.send('Profanity Filter Turned **On**!')
 
         elif onOff.lower() == 'off':
-            serverInfo.update_one({'_id': guildID}, {'$set': {'messageRestrictions': False}})
+            guildInfo.update_one({'_id': guildID}, {'$set': {'messageRestrictions': False}})
             await ctx.channel.send('Profanity Filter Turned **Off**!')
 
         else:

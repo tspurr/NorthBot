@@ -49,6 +49,29 @@ class roleManagement(commands.Cog, name='Role Management'):
     async def on_ready(self):
         print('\t- Loaded roleManagement')
 
+    # On member join, give them the default role if applicable
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        memberID = member.id
+        guild = member.guild
+
+        dataBase = cluster[str(guild.id)]
+        guildInfo = dataBase['guildInfo']
+
+        modChannel = self.client.get_channel(guildInfo['modChat'])
+        guildInfo = guildInfo.find_one({'_id': guild.id})
+
+        # If the default role is active and set
+        if guildInfo['defaultRole']:
+            # IF there is a base role
+
+            if guildInfo['baseRole'] != str():
+                role = discord.utils.get(guild.roles, name=guildInfo['baseRole'])
+                member.add_role(role)
+            else:
+                await modChannel.send(f'There is no base role set! Please set one!')
+
+
     """###################################################
     #                     Commands                       #
     ###################################################"""
@@ -59,8 +82,8 @@ class roleManagement(commands.Cog, name='Role Management'):
     async def defaultRoleOnOff(self, ctx, OnOff):
         guildID = ctx.guild.id
         dataBase = cluster[str(guildID)]
-        collection = dataBase['serverInfo']
-        # serverInfo = collection.find_one({'_id': guildID})
+        collection = dataBase['guildInfo']
+        # guildInfo = collection.find_one({'_id': guildID})
 
         if OnOff.lower() == 'on':
             collection.update_one({'_id': guildID}, {'$set': {'defaultRole': True}})
@@ -76,7 +99,7 @@ class roleManagement(commands.Cog, name='Role Management'):
     async def setDefaultRole(self, ctx, roleName):
         guildID = ctx.guild.id
         dataBase = cluster[str(guildID)]
-        collection = dataBase['serverInfo']
+        collection = dataBase['guildInfo']
 
         collection.update_one({'_id': guildID}, {'$set': {'baseRole': roleName}})
 
@@ -88,7 +111,7 @@ class roleManagement(commands.Cog, name='Role Management'):
         dataBase = cluster[str(guildID)]
         collection = dataBase['roleGroups']
 
-        if collection.count_documents({'_id': args[0]}) == 0:  # Checks if the server has a group with that name already
+        if collection.count_documents({'_id': args[0]}) == 0:  # Checks if the guild has a group with that name already
             post = {'_id': args[0], 'roleNames': args[1:]}
             collection.insert_one(post)
             await ctx.channel.send(f'Role Group {args[0]} created!')
@@ -126,7 +149,7 @@ class roleManagement(commands.Cog, name='Role Management'):
         roleGroup = collection.find_one({'_id': name})
         array = roleGroup['roleNames']
 
-        # If the user wants to remove roles
+        # If the member wants to remove roles
         if edit.lower() == 'r':
 
             # Loop through the amount of roles to be removed from the group
@@ -146,7 +169,7 @@ class roleManagement(commands.Cog, name='Role Management'):
             collection.update_one({'_id': name}, {'$set': {'roleNames': array}})
             await ctx.channel.send(f'Removed {num} roles')
 
-        # If the user wants to insert roles
+        # If the member wants to insert roles
         elif edit.lower() == "i":
 
             # Inserting the role into the role group

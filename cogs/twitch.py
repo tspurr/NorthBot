@@ -44,12 +44,12 @@ class twitch(commands.Cog, name='Twitch/YouTube'):
     #                      Events                        #
     ###################################################"""
 
-    # Event Showing serverStatistics is loaded
+    # Event Showing guildStatistics is loaded
     @commands.Cog.listener()
     async def on_ready(self):
         print('\t- Loaded twitch')
 
-    # Checks for people in a discord server who went live and makes a notification about it
+    # Checks for people in a discord guild who went live and makes a notification about it
     @commands.Cog.listener()
     async def my_background_task(self):
         # Variables
@@ -71,26 +71,26 @@ class twitch(commands.Cog, name='Twitch/YouTube'):
             guildID = guild.id
             dataBase = cluster[str(guildID)]
 
-            # Grabs the server info document all in one step instead of spreading it out
-            serverInfo = dataBase['serverInfo'].find_one({'_id': guildID})
+            # Grabs the guild info document all in one step instead of spreading it out
+            guildInfo = dataBase['guildInfo'].find_one({'_id': guildID})
 
-            # If the server has announcements turned on
-            if serverInfo['announceStreams']:
+            # If the guild has announcements turned on
+            if guildInfo['announceStreams']:
 
-                # Loop through all the members in a server
+                # Loop through all the members in a guild
                 for member in members:
 
-                    # Getting the activity type of the member in the server
+                    # Getting the activity type of the member in the guild
                     activity = member.Activity()
 
                     # If they are streaming
                     if activity.type == 'Streaming':
 
                         # If there is no stream announcement channel set
-                        if serverInfo['streamChannel'] == '':
+                        if guildInfo['streamChannel'] == '':
 
-                            if serverInfo['modChat'] != '':
-                                modChannel = self.client.get_channel(serverInfo['modChat'])
+                            if guildInfo['modChat'] != '':
+                                modChannel = self.client.get_channel(guildInfo['modChat'])
                                 await modChannel.send('There is no announcement channel set, please set one using .setStreamChannel')
                             else:
                                 return
@@ -102,7 +102,7 @@ class twitch(commands.Cog, name='Twitch/YouTube'):
                         streamGame = memberStream.game
                         streamURL = memberStream.URL
 
-                        announcementChannel = self.client.get_channel(serverInfo['streamChannel'])
+                        announcementChannel = self.client.get_channel(guildInfo['streamChannel'])
                         embed = discord.Embed(
                             color=embedColor(platform)  # Should return what color to use for the embed
                         )
@@ -147,18 +147,18 @@ class twitch(commands.Cog, name='Twitch/YouTube'):
     @commands.has_permissions(administrator=True)
     async def streamAnnounceOnOff(self, ctx, onOff):
         dataBase = cluster[str(ctx.guild.id)]
-        serverInfo = dataBase['serverInfo']
+        guildInfo = dataBase['guildInfo']
 
         if onOff.lower() == 'on':
-            serverInfo.update_one({'_id': ctx.guild.id}, {'$set': {'announceStreams': True}})
+            guildInfo.update_one({'_id': ctx.guild.id}, {'$set': {'announceStreams': True}})
             await ctx.channel.send('Stream Announcements Turned **On**!')
 
             # If there is no channel set remind them to set one
-            if serverInfo['streamChannel'] == int():
+            if guildInfo['streamChannel'] == int():
                 await ctx.channel.send('Make sure to assign a channel to announce streams!\n.setStreamChannel [ID]')
 
         elif onOff.lower == 'off':
-            serverInfo.update_one({'_id': ctx.guild.id}, {'$set': {'announceStreams': False}})
+            guildInfo.update_one({'_id': ctx.guild.id}, {'$set': {'announceStreams': False}})
             await ctx.channel.send('Stream Announcements Turned **Off**!')
 
         else:
@@ -166,12 +166,13 @@ class twitch(commands.Cog, name='Twitch/YouTube'):
 
     # Updates the channel that streams are to be announced in
     @commands.command()
-    async def setStreamChannel(self, ctx, channelID):
+    async def setStreamChannel(self, ctx, channel):
+        channelID = channel.id
         guildID = ctx.guild.id
         dataBase = cluster[str(guildID)]
-        serverInfo = dataBase['serverInfo']
+        guildInfo = dataBase['guildInfo']
 
-        serverInfo.update_one({'_id': guildID}, {'$set': {'streamChannel': channelID}})
+        guildInfo.update_one({'_id': guildID}, {'$set': {'streamChannel': channelID}})
 
     # Ping command to see if the file is loaded
     @commands.command(hidden=True)

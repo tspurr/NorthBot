@@ -38,7 +38,7 @@ cluster = MongoClient(connectionURL)
 embedColor = discord.Color.green()
 
 
-class serverStatistics(commands.Cog, name='Server Statistics'):
+class guildStatistics(commands.Cog, name='Server Statistics'):
 
     def __init__(self, client):
         self.client = client
@@ -47,29 +47,31 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
     #                      Events                        #
     ###################################################"""
 
-    # Event Showing serverStatistics is loaded
+    # Event Showing guildStatistics is loaded
     @commands.Cog.listener()
     async def on_ready(self):
-        print('\t- Loaded serverStatistics')
+        print('\t- Loaded guildStatistics')
 
-    # Creates the dataBase for when the bot joins a discord server
+    # Creates the dataBase for when the bot joins a discord guild
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
 
         guildID = guild.id
-        serverName = guild.Name
+        members = guild.members
+        guildName = guild.Name
+        guildOwner = guild.owner
 
-        print(f'Joined {serverName}!')
+        print(f'Joined {guildName}!')
 
         dataBase = cluster[guildID]
-        serverInfo = dataBase['serverInfo']
+        guildInfo = dataBase['guildInfo']
         channelData = dataBase['channelData']
 
-        # Creates default information for a server on join
-        post = {'_id': guildID, 'serverName': serverName,
-                'numMembers': len(guild.members), 'streamChannel': str(), 'modChat': str(), 'baseRole': str(),
+        # Creates default information for a guild on join
+        post = {'_id': guildID, 'guildName': guildName,
+                'numMembers': len(members), 'streamChannel': int(), 'modChat': int(), 'baseRole': str(),
                 'messageRestrictions': False, 'reputation': False, 'announceStreams': False, 'defaultRole': False}
-        serverInfo.insert_one(post)
+        guildInfo.insert_one(post)
 
         # Goes through and checks/adds the channelData documents for every channel
         for channel in guild.channels:
@@ -77,49 +79,65 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
                 post = {'_id': channel.id, 'cName': channel.name, 'numMessages': 0}
                 channelData.insert_one(post)
 
-    # Deletes the data base for the server?!?
+        await guildOwner.create_dm()
+        await guildOwner.dm_channel.send(
+            f'Hi {guildOwner.mention} thank you for adding me to your guild!'
+            f'\nMake sure to do a few things first:'
+            f'\n - .setModChat'
+            f'\n - .profanityFilterOnOff [On/Off]'
+            f'\n - .repOnOff [On/Off]'
+            f'\n - .streamAnnounceOnOff [On/Off]'
+            f'\n - ')
+
+    # Deletes the data base for the guild?!?
     @commands.Cog.listener()
     async def on_guild_leave(self, guild):
         guildID = guild.id
-        serverName = guild.Name
+        guildName = guild.Name
 
-        print(f'Left {serverName}!')
+        print(f'Left {guildName}!')
 
-        # This should delete the server data
+        # This should delete the guild data
         cluster.drop_database(guildID)
 
-    # If a server updates any relevant information
+    # If a guild updates any relevant information
     @commands.Cog.listener()
     async def on_guild_update(self, guild):
         guildID = guild.id
-        serverName = guild.Name
+        guildName = guild.Name
 
         dataBase = cluster[str(guildID)]
-        serverInfo = dataBase['serverInfo']
-        serverData = serverInfo.find_one({'_id': guildID})
+        guildInfo = dataBase['guildInfo']
+        guildData = guildInfo.find_one({'_id': guildID})
 
-        if serverName != serverData['serverName']:
-            serverInfo.update_one({'_id': guildID}, {'$set': {'serverName': serverName}})
+        if guildName != guildData['guildName']:
+            guildInfo.update_one({'_id': guildID}, {'$set': {'guildName': guildName}})
 
-    # Add one to numMembers on server
+    # Add one to numMembers on guild
     @commands.Cog.listener()
     async def on_member_join(self, member):
         guildID = member.guild.id
         dataBase = cluster[guildID]
-        collection = dataBase['serverInfo']
+        guildInfo = dataBase['guildInfo']
+        modChannel = self.client.get_channel(guildInfo['modChat'])
 
-        collection.update_one({'_id': guildID}, {'$inc': {'numMembers': 1}})
+        guildInfo.update_one({'_id': guildID}, {'$inc': {'numMembers': 1}})
+
+        await modChannel.send(f'{member.mention} has joined the guild!')
 
     # Subtract one on member leave
     @commands.Cog.listener()
     async def on_member_leave(self, member):
         guildID = member.guild.id
         dataBase = cluster[guildID]
-        collection = dataBase['serverInfo']
+        guildInfo = dataBase['guildInfo']
+        modChannel = self.client.get_channel(guildInfo['modChat'])
 
-        collection.update_one({'_id': guildID}, {'$inc': {'numMembers': -1}})
+        guildInfo.update_one({'_id': guildID}, {'$inc': {'numMembers': -1}})
 
-    # Keeps track of all the messages sent in servers and adds them to a mongoDB
+        await modChannel.send(f'{member} has left the guild... :(')
+
+    # Keeps track of all the messages sent in guilds and adds them to a mongoDB
     # DOES NOT TRACK USER MESSAGES THAT THEY SEND
     @commands.Cog.listener()
     async def on_message(self, ctx):
@@ -133,7 +151,7 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
 
         channelData.update_one({'_id': ctx.channel.id}, {'$inc': {'numMessages': 1}})
 
-    # When a channel is created in the server
+    # When a channel is created in the guild
     @commands.Cog.listener()
     async def on_guild_channel_create(self, channel):
         channelID = channel.id
@@ -144,7 +162,7 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
 
         channelData.insert_one({'_id': channelID, 'cName': channelName, 'numMessages': 0})
 
-    # When a channel is deleted from the server
+    # When a channel is deleted from the guild
     @commands.Cog.listener()
     async def on_guild_channel_remove(self, channel):
         channelID = channel.id
@@ -178,54 +196,54 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
 
     # TODO Gets the least talked in channel
 
-    # TODO Gets general server statistics (responds in embed)
+    # TODO Gets general guild statistics (responds in embed)
     @commands.command()
-    async def serverStats(self, ctx):
+    async def guildStats(self, ctx):
         guildID = ctx.guild.id
-        serverName = ctx.guild.id
+        guildName = ctx.guild.id
 
         dataBase = cluster[str(guildID)]
         channelData = dataBase['channelData']
-        userData = dataBase['userData']
+        memberData = dataBase['memberData']
 
     @commands.command()
     @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, member: discord.Member, *, reason=None):
         guildID = ctx.guild.id
-        serverName = ctx.guild.name
+        guildName = ctx.guild.name
 
         await member.create_dm()
-        await member.dm_channel.send(f'You have been banned from {serverName} for reason: {reason}')
+        await member.dm_channel.send(f'You have been banned from {guildName} for reason: {reason}')
         await member.ban(reason=reason)
 
     @commands.command()
     @commands.has_permissions(kick_members=True)
     async def kick(self, ctx, member: discord.Member, *, reason=None):
         guildID = ctx.guild.id
-        serverName = ctx.guild.name
+        guildName = ctx.guild.name
 
         await member.create_dm()
-        await member.dm_channel.send(f'You have been kicked from {serverName} for reason: {reason}')
+        await member.dm_channel.send(f'You have been kicked from {guildName} for reason: {reason}')
         await member.kick(reason=reason)
 
     @commands.command(hidden=True)
     @commands.has_permissions(administrator=True)
-    async def serverRefresh(self, ctx):
+    async def guildRefresh(self, ctx):
         guildID = ctx.guild.id
-        serverName = ctx.guild.name
+        guildName = ctx.guild.name
         members = ctx.guild.members  # This probably doesn't work
         channels = ctx.guild.channels
         dataBase = cluster[str(guildID)]
-        serverInfo = dataBase['serverInfo']
+        guildInfo = dataBase['guildInfo']
         channelData = dataBase['channelData']
         query = {'_id': guildID}
 
-        # If the server document is not found in the collection then we insert a new one
-        if serverInfo.count_documents(query) == 0:
-            post = {'_id': guildID, 'serverName': serverName,
-                    'numMembers': len(guild.members), 'streamChannel': str(), 'modChat': str(), 'baseRole': str(),
+        # If the guild document is not found in the collection then we insert a new one
+        if guildInfo.count_documents(query) == 0:
+            post = {'_id': guildID, 'guildName': guildName,
+                    'numMembers': len(members), 'streamChannel': int(), 'modChat': int(), 'baseRole': str(),
                     'messageRestrictions': False, 'reputation': False, 'announceStreams': False, 'defaultRole': False}
-            serverInfo.insert_one(post)
+            guildInfo.insert_one(post)
 
             await ctx.channel.send('Server info refreshed')
         else:
@@ -236,6 +254,18 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
             if channelData.count_documents({'_id': channel.id}) == 0:
                 post = {'_id': ctx.channel.id, 'cName': ctx.channel.name, 'numMessages': 0}
                 channelData.insert_one(post)
+
+    # Setting the modChat channel
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def setModChat(self, ctx, channel):
+        channelID = channel.id
+        guildID = ctx.guild.id
+
+        dataBase = cluster[str(guildID)]
+        guildInfo = dataBase['guildInfo']
+
+        guildInfo.update_one({'id': guildID}, {'$set': {'modChat': channelID}})
 
     # Ping command to see the latency of the bot
     @commands.command()
@@ -254,9 +284,9 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
             description='Pong!',
             color=embedColor
         )
-        embed.set_footer(text=f'serverStatistics.py online')
+        embed.set_footer(text=f'guildStatistics.py online')
         await ctx.channel.send(embed=embed)
 
 
 def setup(client):
-    client.add_cog(serverStatistics(client))
+    client.add_cog(guildStatistics(client))
