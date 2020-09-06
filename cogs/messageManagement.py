@@ -73,15 +73,15 @@ class messageManagement(commands.Cog, name='Message Management'):
         if str(ctx.channel) == 'pics' and ctx.content != "":
             await ctx.channel.purge(limit=1)
 
-        serverID = ctx.guild.id
+        guildID = ctx.guild.id
         messageContent = ctx.content.split(' ')
 
-        dataBase = cluster[str(serverID)]
+        dataBase = cluster[str(guildID)]
         serverInfo = dataBase['serverInfo']
         userData = dataBase['userData']
 
         # Find if the server has message restrictions on and if they do check the message for bad words and give a warning
-        query = serverInfo.find_one({'_id': serverID})
+        query = serverInfo.find_one({'_id': guildID})
         if query['messageRestrictions']:
 
             if badWord(messageContent):
@@ -128,17 +128,17 @@ class messageManagement(commands.Cog, name='Message Management'):
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def profanityFilter(self, ctx, onOff):
-        serverID = ctx.guild.id
+        guildID = ctx.guild.id
 
-        dataBase = cluster[str(serverID)]
+        dataBase = cluster[str(guildID)]
         serverInfo = dataBase['serverInfo']
 
         if onOff.lower() == 'on':
-            serverInfo.update_one({'_id': serverID}, {'$set': {'messageRestrictions': True}})
+            serverInfo.update_one({'_id': guildID}, {'$set': {'messageRestrictions': True}})
             await ctx.channel.send('Profanity Filter Turned **On**!')
 
         elif onOff.lower() == 'off':
-            serverInfo.update_one({'_id': serverID}, {'$set': {'messageRestrictions': False}})
+            serverInfo.update_one({'_id': guildID}, {'$set': {'messageRestrictions': False}})
             await ctx.channel.send('Profanity Filter Turned **Off**!')
 
         else:

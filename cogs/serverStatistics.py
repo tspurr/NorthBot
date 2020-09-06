@@ -56,18 +56,19 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
 
-        serverID = guild.id
+        guildID = guild.id
         serverName = guild.Name
 
         print(f'Joined {serverName}!')
 
-        dataBase = cluster[serverID]
+        dataBase = cluster[guildID]
         serverInfo = dataBase['serverInfo']
         channelData = dataBase['channelData']
 
         # Creates default information for a server on join
-        post = {'_id': serverID, 'serverName': serverName, 'numMembers': len(guild.members), 'streamChannel': '', 'modChat': '',
-                'messageRestrictions': False, 'reputation': False, 'announceStreams': False}
+        post = {'_id': guildID, 'serverName': serverName,
+                'numMembers': len(guild.members), 'streamChannel': str(), 'modChat': str(), 'baseRole': str(),
+                'messageRestrictions': False, 'reputation': False, 'announceStreams': False, 'defaultRole': False}
         serverInfo.insert_one(post)
 
         # Goes through and checks/adds the channelData documents for every channel
@@ -79,44 +80,44 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
     # Deletes the data base for the server?!?
     @commands.Cog.listener()
     async def on_guild_leave(self, guild):
-        serverID = guild.id
+        guildID = guild.id
         serverName = guild.Name
 
         print(f'Left {serverName}!')
 
         # This should delete the server data
-        cluster.drop_database(serverID)
+        cluster.drop_database(guildID)
 
     # If a server updates any relevant information
     @commands.Cog.listener()
     async def on_guild_update(self, guild):
-        serverID = guild.id
+        guildID = guild.id
         serverName = guild.Name
 
-        dataBase = cluster[str(serverID)]
+        dataBase = cluster[str(guildID)]
         serverInfo = dataBase['serverInfo']
-        serverData = serverInfo.find_one({'_id': serverID})
+        serverData = serverInfo.find_one({'_id': guildID})
 
         if serverName != serverData['serverName']:
-            serverInfo.update_one({'_id': serverID}, {'$set': {'serverName': serverName}})
+            serverInfo.update_one({'_id': guildID}, {'$set': {'serverName': serverName}})
 
     # Add one to numMembers on server
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        serverID = member.guild.id
-        dataBase = cluster[serverID]
+        guildID = member.guild.id
+        dataBase = cluster[guildID]
         collection = dataBase['serverInfo']
 
-        collection.update_one({'_id': serverID}, {'$inc': {'numMembers': 1}})
+        collection.update_one({'_id': guildID}, {'$inc': {'numMembers': 1}})
 
     # Subtract one on member leave
     @commands.Cog.listener()
     async def on_member_leave(self, member):
-        serverID = member.guild.id
-        dataBase = cluster[serverID]
+        guildID = member.guild.id
+        dataBase = cluster[guildID]
         collection = dataBase['serverInfo']
 
-        collection.update_one({'_id': serverID}, {'$inc': {'numMembers': -1}})
+        collection.update_one({'_id': guildID}, {'$inc': {'numMembers': -1}})
 
     # Keeps track of all the messages sent in servers and adds them to a mongoDB
     # DOES NOT TRACK USER MESSAGES THAT THEY SEND
@@ -180,17 +181,17 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
     # TODO Gets general server statistics (responds in embed)
     @commands.command()
     async def serverStats(self, ctx):
-        serverID = ctx.guild.id
+        guildID = ctx.guild.id
         serverName = ctx.guild.id
 
-        dataBase = cluster[str(serverID)]
+        dataBase = cluster[str(guildID)]
         channelData = dataBase['channelData']
         userData = dataBase['userData']
 
     @commands.command()
     @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, member: discord.Member, *, reason=None):
-        serverID = ctx.guild.id
+        guildID = ctx.guild.id
         serverName = ctx.guild.name
 
         await member.create_dm()
@@ -200,7 +201,7 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
     @commands.command()
     @commands.has_permissions(kick_members=True)
     async def kick(self, ctx, member: discord.Member, *, reason=None):
-        serverID = ctx.guild.id
+        guildID = ctx.guild.id
         serverName = ctx.guild.name
 
         await member.create_dm()
@@ -210,19 +211,20 @@ class serverStatistics(commands.Cog, name='Server Statistics'):
     @commands.command(hidden=True)
     @commands.has_permissions(administrator=True)
     async def serverRefresh(self, ctx):
-        serverID = ctx.guild.id
+        guildID = ctx.guild.id
         serverName = ctx.guild.name
         members = ctx.guild.members  # This probably doesn't work
         channels = ctx.guild.channels
-        dataBase = cluster[str(serverID)]
+        dataBase = cluster[str(guildID)]
         serverInfo = dataBase['serverInfo']
         channelData = dataBase['channelData']
-        query = {'_id': serverID}
+        query = {'_id': guildID}
 
         # If the server document is not found in the collection then we insert a new one
         if serverInfo.count_documents(query) == 0:
-            post = {'_id': serverID, 'serverName': serverName, 'numMembers': len(members), 'streamChannel': int(), 'modChat': int(),
-                    'messageRestrictions': False, 'reputation': False, 'announceStreams': False}
+            post = {'_id': guildID, 'serverName': serverName,
+                    'numMembers': len(guild.members), 'streamChannel': str(), 'modChat': str(), 'baseRole': str(),
+                    'messageRestrictions': False, 'reputation': False, 'announceStreams': False, 'defaultRole': False}
             serverInfo.insert_one(post)
 
             await ctx.channel.send('Server info refreshed')

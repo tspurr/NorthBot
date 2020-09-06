@@ -68,11 +68,11 @@ class twitch(commands.Cog, name='Twitch/YouTube'):
         for guild in guilds:
             members = guild.members
 
-            serverID = guild.id
-            dataBase = cluster[str(serverID)]
+            guildID = guild.id
+            dataBase = cluster[str(guildID)]
 
             # Grabs the server info document all in one step instead of spreading it out
-            serverInfo = dataBase['serverInfo'].find_one({'_id': serverID})
+            serverInfo = dataBase['serverInfo'].find_one({'_id': guildID})
 
             # If the server has announcements turned on
             if serverInfo['announceStreams']:
@@ -167,11 +167,11 @@ class twitch(commands.Cog, name='Twitch/YouTube'):
     # Updates the channel that streams are to be announced in
     @commands.command()
     async def setStreamChannel(self, ctx, channelID):
-        serverID = ctx.guild.id
-        dataBase = cluster[str(serverID)]
+        guildID = ctx.guild.id
+        dataBase = cluster[str(guildID)]
         serverInfo = dataBase['serverInfo']
 
-        serverInfo.update_one({'_id': serverID}, {'$set': {'streamChannel': channelID}})
+        serverInfo.update_one({'_id': guildID}, {'$set': {'streamChannel': channelID}})
 
     # Ping command to see if the file is loaded
     @commands.command(hidden=True)

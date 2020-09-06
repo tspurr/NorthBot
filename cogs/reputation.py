@@ -62,9 +62,9 @@ class reputation(commands.Cog, name='Reputation'):
         await member.create_dm()
         await member.dm_channel.send(f'HI {member.name} welcome to {member.guild.name}!\nMake sure to go check out rules and roles!\nLastly make sure to have fun!')
 
-        serverID = member.guild.id
+        guildID = member.guild.id
 
-        dataBase = cluster[str(serverID)]
+        dataBase = cluster[str(guildID)]
         userData = dataBase['userData']
 
         # Creates a default user for a member in the data base
@@ -78,9 +78,9 @@ class reputation(commands.Cog, name='Reputation'):
         await member.create_dm()
         await member.dm_channel.send(f'Sorry to see you leave {member.guild.name}!')
 
-        serverID = member.guild.id
+        guildID = member.guild.id
 
-        dataBase = cluster[str(serverID)]
+        dataBase = cluster[str(guildID)]
         userData = dataBase['userData']
 
         # Find the user and delete all the information about them (may not keep this)
@@ -92,11 +92,11 @@ class reputation(commands.Cog, name='Reputation'):
     # If a member updates any relevant information\
     @commands.Cog.listener()
     async def on_member_update(self, member):
-        serverID = member.guild.id
+        guildID = member.guild.id
         memberID = member.id
         memberName = member.name
 
-        dataBase = cluster[str(serverID)]
+        dataBase = cluster[str(guildID)]
         userData = dataBase['userData']
 
         update = userData.find_one({'_id': memberID})
@@ -108,9 +108,9 @@ class reputation(commands.Cog, name='Reputation'):
     # Go through and create files for every member on a server to insert into the data base
     @commands.Cog.listener()
     async def on_server_join(self, server):
-        serverID = server.id
+        guildID = server.id
 
-        dataBase = cluster[serverID]
+        dataBase = cluster[guildID]
         userData = dataBase['userData']
 
         # Going through all the members in a server when the bot is added
@@ -126,8 +126,8 @@ class reputation(commands.Cog, name='Reputation'):
         if ctx.author.bot:
             return
 
-        serverID = ctx.guild.id
-        dataBase = cluster[str(serverID)]
+        guildID = ctx.guild.id
+        dataBase = cluster[str(guildID)]
         userData = dataBase['userData']
         messageContent = ctx.content.split(' ')
 
@@ -213,10 +213,10 @@ class reputation(commands.Cog, name='Reputation'):
     @commands.command(hidden=True)
     @commands.has_permissions(administrator=True)
     async def refreshUsers(self, ctx):
-        serverID = ctx.guild.id
+        guildID = ctx.guild.id
         members = ctx.guild.members
 
-        dataBase = cluster[str(serverID)]
+        dataBase = cluster[str(guildID)]
         userData = dataBase['userData']
 
         # Going through all the members in a server when the bot is added
